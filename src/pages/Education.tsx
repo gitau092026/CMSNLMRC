@@ -44,6 +44,8 @@ import { Textarea } from"@/components/ui/textarea";
 import { supabase } from"@/integrations/supabase/client";
 import { useToast } from"@/hooks/use-toast";
 import { useAuth } from"@/contexts/AuthContext";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Client {
  id: string;
@@ -108,6 +110,12 @@ const Education = () => {
  const [studentMarks, setStudentMarks] = useState<(Mark & { subject_name: string; subject_code: string })[]>([]);
  const [existingStudentMarks, setExistingStudentMarks] = useState<Mark[]>([]);
  const [loadingReport, setLoadingReport] = useState(false);
+ const [aggregateReportOpen, setAggregateReportOpen] = useState(false);
+
+ // Education Level edit states
+ const [eduLevelDialogOpen, setEduLevelDialogOpen] = useState(false);
+ const [eduLevelStudent, setEduLevelStudent] = useState<Client | null>(null);
+ const [eduLevelValue, setEduLevelValue] = useState("");
 
  useEffect(() => {
  fetchStudents();
@@ -437,6 +445,74 @@ const Education = () => {
  return name.split(' ').map(n => n[0]).join('');
  };
 
+ const handleOpenEduLevel = (student: Client) => {
+  setEduLevelStudent(student);
+  setEduLevelValue(student.education_level || "");
+  setEduLevelDialogOpen(true);
+ };
+
+ const handleSaveEducationLevel = async () => {
+  if (!eduLevelStudent) return;
+  try {
+   const { error } = await supabase
+    .from('clients')
+    .update({ education_level: eduLevelValue || null })
+    .eq('id', eduLevelStudent.id);
+   if (error) throw error;
+   toast({ title: "Success", description: "Education level updated successfully" });
+   setEduLevelDialogOpen(false);
+   fetchStudents();
+  } catch (error: any) {
+   toast({ title: "Error", description: error.message, variant: "destructive" });
+  }
+ };
+
+ const handleDownloadPdf = () => {
+   try {
+     const doc = new jsPDF();
+     
+     // Add Header
+     doc.setFontSize(20);
+     doc.text("Education Department Report", 14, 22);
+     
+     doc.setFontSize(11);
+     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+     doc.text(`Total Enrolled Students: ${students.length}`, 14, 36);
+     doc.text(`Total Subjects: ${subjects.length}`, 14, 42);
+
+     // Add Students Table
+     const tableColumn = ["Student Name", "Age", "Education Level", "Status"];
+     const tableRows = students.map(student => [
+       student.name,
+       student.age.toString(),
+       student.education_level || "Not Set",
+       student.status
+     ]);
+
+     autoTable(doc, {
+       head: [tableColumn],
+       body: tableRows,
+       startY: 50,
+       theme: 'striped',
+       headStyles: { fillColor: [249, 115, 22] },
+     });
+
+     doc.save("education_department_report.pdf");
+     
+     toast({
+       title: "Success",
+       description: "Report downloaded successfully",
+     });
+   } catch (error) {
+     console.error("Error generating report:", error);
+     toast({
+       title: "Error",
+       description: "Failed to generate report",
+       variant: "destructive"
+     });
+   }
+ };
+
   return (
     <div className="min-h-screen bg-neutral-50/80 w-full max-w-full">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl animate-in fade-in duration-500">
@@ -470,6 +546,7 @@ const Education = () => {
                 <Button 
                   variant="secondary" 
                   className="bg-white/20 text-white hover:bg-white/30 border-0 shadow-sm hover:shadow-md transition-all duration-300 backdrop-blur-sm font-semibold"
+                  onClick={() => setAggregateReportOpen(true)}
                 >
                   <FileText className="h-4 w-4 mr-2" />
                   View Reports
@@ -618,14 +695,25 @@ const Education = () => {
                           <TableCell className="py-4">
                             <div className="flex justify-end gap-2">
                               {isEducationStaff && (
-                                <Button
-                                  size="sm"
-                                  className="bg-[#F97316] text-white hover:bg-orange-600 shadow-sm font-semibold rounded-lg px-4"
-                                  onClick={() => handleAddMarks(student)}
-                                >
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Grade
-                                </Button>
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 shadow-sm font-semibold rounded-lg px-3"
+                                    onClick={() => handleOpenEduLevel(student)}
+                                  >
+                                    <Edit className="h-4 w-4 mr-1" />
+                                    Level
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="bg-[#F97316] text-white hover:bg-orange-600 shadow-sm font-semibold rounded-lg px-4"
+                                    onClick={() => handleAddMarks(student)}
+                                  >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Grade
+                                  </Button>
+                                </>
                               )}
                               <Button
                                 size="sm"
@@ -974,6 +1062,168 @@ const Education = () => {
  </DialogFooter>
  </DialogContent>
  </Dialog>
+
+ {/* Aggregate Report Preview Dialog */}
+ <Dialog open={aggregateReportOpen} onOpenChange={setAggregateReportOpen}>
+  <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+   <DialogHeader>
+    <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+     <FileText className="h-5 w-5 text-orange-500" />
+     Education Department Report
+    </DialogTitle>
+    <DialogDescription>
+     Overview of all enrolled students and academic statistics. Export to PDF when ready.
+    </DialogDescription>
+   </DialogHeader>
+
+   <div className="flex-1 overflow-y-auto py-4 space-y-6">
+    {/* Summary Cards */}
+    <div className="grid grid-cols-2 gap-4">
+     <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center gap-3">
+      <div className="p-2 bg-orange-100 rounded-lg">
+       <Users className="h-5 w-5 text-orange-600" />
+      </div>
+      <div>
+       <p className="text-2xl font-extrabold text-slate-800">{students.length}</p>
+       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Students</p>
+      </div>
+     </div>
+     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
+      <div className="p-2 bg-emerald-100 rounded-lg">
+       <BookOpen className="h-5 w-5 text-emerald-600" />
+      </div>
+      <div>
+       <p className="text-2xl font-extrabold text-slate-800">{subjects.length}</p>
+       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Subjects</p>
+      </div>
+     </div>
+    </div>
+
+    {/* Students Table */}
+    <div>
+     <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Enrolled Students</h3>
+     <div className="rounded-xl border border-neutral-200 overflow-hidden">
+      <Table>
+       <TableHeader className="bg-slate-50">
+        <TableRow>
+         <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Name</TableHead>
+         <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Age</TableHead>
+         <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Education Level</TableHead>
+         <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</TableHead>
+        </TableRow>
+       </TableHeader>
+       <TableBody>
+        {students.length === 0 ? (
+         <TableRow>
+          <TableCell colSpan={4} className="text-center py-8 text-slate-400">No students enrolled</TableCell>
+         </TableRow>
+        ) : (
+         students.map((student) => (
+          <TableRow key={student.id} className="hover:bg-orange-50/30">
+           <TableCell className="font-semibold text-slate-800">{student.name}</TableCell>
+           <TableCell className="text-slate-600">{student.age} yrs</TableCell>
+           <TableCell className="text-slate-600">{student.education_level || <span className="italic text-slate-400">Not set</span>}</TableCell>
+           <TableCell>
+            <Badge className="bg-emerald-100 text-emerald-700 border-0 font-bold shadow-none hover:bg-emerald-100">
+             {student.status}
+            </Badge>
+           </TableCell>
+          </TableRow>
+         ))
+        )}
+       </TableBody>
+      </Table>
+     </div>
+    </div>
+
+    {/* Subjects Table */}
+    <div>
+     <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Available Subjects</h3>
+     <div className="rounded-xl border border-neutral-200 overflow-hidden">
+      <Table>
+       <TableHeader className="bg-slate-50">
+        <TableRow>
+         <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Subject</TableHead>
+         <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Code</TableHead>
+         <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Description</TableHead>
+        </TableRow>
+       </TableHeader>
+       <TableBody>
+        {subjects.length === 0 ? (
+         <TableRow>
+          <TableCell colSpan={3} className="text-center py-8 text-slate-400">No subjects configured</TableCell>
+         </TableRow>
+        ) : (
+         subjects.map((subject) => (
+          <TableRow key={subject.id} className="hover:bg-slate-50/50">
+           <TableCell className="font-bold text-slate-800">{subject.name}</TableCell>
+           <TableCell>
+            <span className="inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-bold text-orange-700 ring-1 ring-inset ring-orange-600/20">
+             {subject.code}
+            </span>
+           </TableCell>
+           <TableCell className="text-slate-500 text-sm">{subject.description || '-'}</TableCell>
+          </TableRow>
+         ))
+        )}
+       </TableBody>
+      </Table>
+     </div>
+    </div>
+
+    <p className="text-xs text-slate-400 text-right">
+     Report generated on {new Date().toLocaleDateString('en-KE', { dateStyle: 'full' })}
+    </p>
+   </div>
+
+   <DialogFooter className="border-t border-neutral-100 pt-4 gap-2">
+    <Button variant="outline" onClick={() => setAggregateReportOpen(false)}>
+     Close
+    </Button>
+    <Button
+     className="bg-[#F97316] hover:bg-orange-600 text-white font-semibold shadow-sm"
+     onClick={() => { handleDownloadPdf(); setAggregateReportOpen(false); }}
+    >
+     <Download className="h-4 w-4 mr-2" />
+     Export PDF
+    </Button>
+   </DialogFooter>
+  </DialogContent>
+ </Dialog>
+
+ {/* Edit Education Level Dialog */}
+ <Dialog open={eduLevelDialogOpen} onOpenChange={setEduLevelDialogOpen}>
+  <DialogContent className="max-w-sm">
+   <DialogHeader>
+    <DialogTitle className="text-lg font-bold text-slate-800">Set Education Level</DialogTitle>
+    <DialogDescription>
+     Update the education level for <span className="font-semibold text-slate-700">{eduLevelStudent?.name}</span>.
+    </DialogDescription>
+   </DialogHeader>
+   <div className="py-4 space-y-3">
+    <Label htmlFor="edu-level">Education Level</Label>
+    <Select value={eduLevelValue} onValueChange={setEduLevelValue}>
+     <SelectTrigger id="edu-level" className="w-full">
+      <SelectValue placeholder="Select education level" />
+     </SelectTrigger>
+     <SelectContent>
+      <SelectItem value="Level 1">Level 1</SelectItem>
+      <SelectItem value="Level 2">Level 2</SelectItem>
+     </SelectContent>
+    </Select>
+   </div>
+   <DialogFooter>
+    <Button variant="outline" onClick={() => setEduLevelDialogOpen(false)}>Cancel</Button>
+    <Button
+     className="bg-[#F97316] hover:bg-orange-600 text-white font-semibold"
+     onClick={handleSaveEducationLevel}
+    >
+     Save
+    </Button>
+   </DialogFooter>
+  </DialogContent>
+ </Dialog>
+
  </div>
  );
 };
