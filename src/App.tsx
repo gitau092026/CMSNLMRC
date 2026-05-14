@@ -44,12 +44,13 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SidebarProvider>
-                    <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
+                    <div className="flex min-h-screen w-full max-w-full">
                       <AppSidebar />
-                      <main className="flex-1 w-full max-w-full overflow-x-hidden min-w-0 flex flex-col">
-                        <div className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-                          <div className="flex h-14 items-center px-4">
+                      <main className="flex-1 w-full max-w-full min-w-0 flex flex-col">
+                        <div className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+                          <div className="flex h-14 items-center gap-4 px-4">
                             <SidebarTrigger className="-ml-1" />
+                            <span className="font-semibold text-primary md:hidden">CMSNLMRC</span>
                           </div>
                         </div>
                         <div className="flex-1">

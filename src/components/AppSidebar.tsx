@@ -11,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -51,6 +52,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border/50 h-14 flex items-center justify-center px-4">
+        {!isCollapsed && <span className="font-bold text-xl text-primary tracking-tight">CMSNLMRC</span>}
+        {isCollapsed && <span className="font-bold text-xl text-primary tracking-tight">C</span>}
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>NAVIGATION</SidebarGroupLabel>
