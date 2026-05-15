@@ -491,12 +491,16 @@ const ClientDetails = () => {
             ];
             addSectionTable('Functional Assessment', funcData);
 
-            // ---- Psychosocial & Behavioral ----
+            // ---- Psychosocial & Emotional Wellbeing ----
             const psychoData: any[] = [
-                ...(assessmentData.psychoFriends ? [['Friendships', assessmentData.psychoFriends]] : []),
+                ...(assessmentData.psychoFriendsActivities ? [['Friends & Activities', assessmentData.psychoFriendsActivities]] : []),
+                ...(assessmentData.psychoFriendsViews ? [['Views on Friendships', assessmentData.psychoFriendsViews]] : []),
                 ...(assessmentData.psychoFriendQuality ? [['Quality of Friendships', assessmentData.psychoFriendQuality]] : []),
-                ...(assessmentData.psychoCaregiverAttachment ? [['Caregiver Attachment', assessmentData.psychoCaregiverAttachment]] : []),
-                ...(assessmentData.psychoBehaviors ? [['Behavioral Observations', assessmentData.psychoBehaviors]] : []),
+                ...(assessmentData.psychoFriendAge ? [['Age of Friends', assessmentData.psychoFriendAge]] : []),
+                ...(assessmentData.psychoCaregiverAttachmentLevel ? [['Current Caregiver Attachment Level', assessmentData.psychoCaregiverAttachmentLevel]] : []),
+                ...(assessmentData.psychoCaregiverAttachmentDesc ? [['Current Caregiver Relationship', assessmentData.psychoCaregiverAttachmentDesc]] : []),
+                ...(assessmentData.psychoPrevCaregiverAttachmentLevel ? [['Previous Caregiver Attachment Level', assessmentData.psychoPrevCaregiverAttachmentLevel]] : []),
+                ...(assessmentData.psychoPrevCaregiverAttachmentDesc ? [['Previous Caregiver Relationship', assessmentData.psychoPrevCaregiverAttachmentDesc]] : []),
                 ...(assessmentData.psychoLikes ? [['Likes', assessmentData.psychoLikes]] : []),
                 ...(assessmentData.psychoDislikes ? [['Dislikes', assessmentData.psychoDislikes]] : []),
                 ...(assessmentData.psychoFears ? [['Fears', assessmentData.psychoFears]] : []),
@@ -505,7 +509,7 @@ const ClientDetails = () => {
                 ...(assessmentData.psychoIndependence ? [['Level of Independence', assessmentData.psychoIndependence]] : []),
                 ...(assessmentData.psychoRisks && assessmentData.psychoRisks.length > 0 ? [['Identified Risks', cleanVal(assessmentData.psychoRisks)]] : []),
             ];
-            addSectionTable('Psychosocial & Behavioral', psychoData);
+            addSectionTable('Psychosocial & Emotional Wellbeing', psychoData);
 
             // ---- Assessment Conclusion ----
             const conclusionData: any[] = [
@@ -1274,11 +1278,15 @@ const ClientDetails = () => {
 
                 {/* Psychosocial */}
                 {assessmentData && (
-                    assessmentData.psychoFriends ||
-                    assessmentData.psychoBehaviors ||
+                    assessmentData.psychoFriendsActivities ||
+                    assessmentData.psychoFriendsViews ||
+                    assessmentData.psychoFriendQuality ||
+                    assessmentData.psychoFriendAge ||
                     (assessmentData.psychoRisks && assessmentData.psychoRisks.length > 0) ||
-                    assessmentData.psychoCaregiverAttachment ||
                     assessmentData.psychoCaregiverAttachmentLevel ||
+                    assessmentData.psychoCaregiverAttachmentDesc ||
+                    assessmentData.psychoPrevCaregiverAttachmentLevel ||
+                    assessmentData.psychoPrevCaregiverAttachmentDesc ||
                     assessmentData.psychoLikes ||
                     assessmentData.psychoDislikes ||
                     assessmentData.psychoFears ||
@@ -1290,22 +1298,28 @@ const ClientDetails = () => {
                             <CardHeader className="py-3 px-4 border-b border-secondary/20 bg-secondary/10">
                                 <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
                                     <User className="h-5 w-5 text-secondary" />
-                                    Psychosocial & Behavioral
+                                    Psychosocial & Emotional Wellbeing
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-4">
                                 <div className="space-y-6">
                                     {/* Social & Behavioral Group */}
-                                    {(assessmentData.psychoFriends || assessmentData.psychoFriendQuality || assessmentData.psychoCaregiverAttachment || assessmentData.psychoBehaviors) && (
+                                    {(assessmentData.psychoFriendsActivities || assessmentData.psychoFriendsViews || assessmentData.psychoFriendQuality || assessmentData.psychoFriendAge || assessmentData.psychoCaregiverAttachmentLevel || assessmentData.psychoCaregiverAttachmentDesc || assessmentData.psychoPrevCaregiverAttachmentLevel || assessmentData.psychoPrevCaregiverAttachmentDesc) && (
                                         <div>
                                             <h4 className="text-xs font-bold uppercase tracking-wide text-secondary mb-3 flex items-center gap-2">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span> Social & Behavioral
                                             </h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-md border border-secondary/20 bg-secondary/5">
-                                                {assessmentData.psychoFriends && (
+                                                {assessmentData.psychoFriendsActivities && (
                                                     <div className="space-y-1">
-                                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Friendships</span>
-                                                        <p className="text-sm font-medium text-foreground whitespace-pre-wrap">{assessmentData.psychoFriends}</p>
+                                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Friends & Activities</span>
+                                                        <p className="text-sm font-medium text-foreground whitespace-pre-wrap">{assessmentData.psychoFriendsActivities}</p>
+                                                    </div>
+                                                )}
+                                                {assessmentData.psychoFriendsViews && (
+                                                    <div className="space-y-1">
+                                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Views on Friendships</span>
+                                                        <p className="text-sm font-medium text-foreground whitespace-pre-wrap">{assessmentData.psychoFriendsViews}</p>
                                                     </div>
                                                 )}
                                                 {assessmentData.psychoFriendQuality && (
@@ -1314,16 +1328,28 @@ const ClientDetails = () => {
                                                         <p className="text-sm font-medium text-foreground whitespace-pre-wrap">{assessmentData.psychoFriendQuality}</p>
                                                     </div>
                                                 )}
-                                                {assessmentData.psychoCaregiverAttachment && (
+                                                {assessmentData.psychoFriendAge && (
                                                     <div className="space-y-1">
-                                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Caregiver Attachment</span>
-                                                        <p className="text-sm font-medium text-foreground whitespace-pre-wrap">{assessmentData.psychoCaregiverAttachment}</p>
+                                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Age of Friends</span>
+                                                        <p className="text-sm font-medium text-foreground whitespace-pre-wrap">{assessmentData.psychoFriendAge}</p>
                                                     </div>
                                                 )}
-                                                {assessmentData.psychoBehaviors && (
+                                                {(assessmentData.psychoCaregiverAttachmentLevel || assessmentData.psychoCaregiverAttachmentDesc) && (
                                                     <div className="space-y-1 sm:col-span-2">
-                                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Behavioral Observations</span>
-                                                        <p className="text-sm font-medium text-foreground whitespace-pre-wrap">{assessmentData.psychoBehaviors}</p>
+                                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Caregiver Attachment</span>
+                                                        <p className="text-sm font-medium text-foreground whitespace-pre-wrap">
+                                                            {assessmentData.psychoCaregiverAttachmentLevel && <span className="font-semibold block">Level: {assessmentData.psychoCaregiverAttachmentLevel}</span>}
+                                                            {assessmentData.psychoCaregiverAttachmentDesc}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {(assessmentData.psychoPrevCaregiverAttachmentLevel || assessmentData.psychoPrevCaregiverAttachmentDesc) && (
+                                                    <div className="space-y-1 sm:col-span-2">
+                                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Caregiver Attachment</span>
+                                                        <p className="text-sm font-medium text-foreground whitespace-pre-wrap">
+                                                            {assessmentData.psychoPrevCaregiverAttachmentLevel && <span className="font-semibold block">Level: {assessmentData.psychoPrevCaregiverAttachmentLevel}</span>}
+                                                            {assessmentData.psychoPrevCaregiverAttachmentDesc}
+                                                        </p>
                                                     </div>
                                                 )}
                                             </div>
