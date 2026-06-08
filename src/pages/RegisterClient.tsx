@@ -1360,7 +1360,7 @@ const RegisterClient = () => {
               </TabsContent>
 
               <TabsContent value="wellbeing" className="space-y-4 pt-4">
-                <Card><CardHeader><CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" /> Health & Development</CardTitle></CardHeader>
+                <Card><CardHeader><CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" /> Health & Wellbeing</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     <FormField control={form.control} name="healthGrowth" render={({ field }) => (
                       <FormItem>
@@ -1380,15 +1380,16 @@ const RegisterClient = () => {
                       <div className="space-y-3">
                         <FormField control={form.control} name="healthCurrentStatus" render={({ field }) => (
                           <FormItem className="space-y-4 rounded-md border p-4">
-                            <FormLabel>Any current health conditions?</FormLabel>
+                            <FormLabel>Current Health Status</FormLabel>
                             <FormControl>
                               <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4">
-                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Yes" /></FormControl><FormLabel className="font-normal">Yes</FormLabel></FormItem>
-                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="No" /></FormControl><FormLabel className="font-normal">No</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Good" /></FormControl><FormLabel className="font-normal">Good</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Fair" /></FormControl><FormLabel className="font-normal">Fair</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="Poor" /></FormControl><FormLabel className="font-normal">Poor</FormLabel></FormItem>
                               </RadioGroup>
                             </FormControl>
-                            {form.watch("healthCurrentStatus") === "Yes" && (
-                              <FormField control={form.control} name="healthCurrentDetails" render={({ field }) => (<FormItem><FormLabel>Specify:</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            {(form.watch("healthCurrentStatus") === "Fair" || form.watch("healthCurrentStatus") === "Poor") && (
+                              <FormField control={form.control} name="healthCurrentDetails" render={({ field }) => (<FormItem><FormLabel>Specify details/issues:</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                             )}
                           </FormItem>
                         )} />

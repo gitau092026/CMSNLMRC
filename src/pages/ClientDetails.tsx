@@ -363,6 +363,10 @@ const ClientDetails = () => {
         // ---- Admission Details ----
         const admissionData: any[] = [
             ['Admission Form', assessmentData?.otherAdmissionForms || 'Standard'],
+            ...(client.admission_type ? [['Admission Type', client.admission_type]] : []),
+            ...(client.admission_type_details ? [['Admission Details', client.admission_type_details]] : []),
+            ...(assessmentData?.currentCarePlacementType ? [['Current Care Placement', assessmentData.currentCarePlacementType]] : []),
+            ...(assessmentData?.currentCarePlacementOther ? [['Current Care Placement (Other)', assessmentData.currentCarePlacementOther]] : []),
             ...(client.partner_name ? [['Partner Name', client.partner_name]] : []),
             ...(client.partner_contact_person ? [['Contact Person', client.partner_contact_person]] : []),
             ...(client.partner_contact ? [['Contact Phone', client.partner_contact]] : []),
@@ -379,6 +383,40 @@ const ClientDetails = () => {
             ...(assessmentData?.referralDate ? [['Referral Date', assessmentData.referralDate]] : []),
         ];
         addSectionTable('Admission Details', admissionData);
+
+        // ---- Pre-Admission & Vulnerability ----
+        const preAdmData: any[] = [
+            ...(assessmentData?.preAdmissionLiving ? [['Living Situation', assessmentData.preAdmissionLiving]] : []),
+            ...(assessmentData?.preAdmissionPerson1Name ? [['Primary Contact Name', assessmentData.preAdmissionPerson1Name]] : []),
+            ...(assessmentData?.preAdmissionPerson1Rel ? [['Relationship', assessmentData.preAdmissionPerson1Rel]] : []),
+            ...(assessmentData?.preAdmissionPhone ? [['Phone', assessmentData.preAdmissionPhone]] : []),
+            ...(assessmentData?.preAdmissionIsCCI ? [['In CCI?', assessmentData.preAdmissionIsCCI]] : []),
+            ...(assessmentData?.preAdmissionCCIDetails ? [['CCI Details', assessmentData.preAdmissionCCIDetails]] : []),
+            ...(assessmentData?.vulnerabilityType ? [['Vulnerability Type', assessmentData.vulnerabilityType]] : []),
+            ...(assessmentData?.vulnerabilityLocationStreet ? [['Vulnerability Location (Street)', assessmentData.vulnerabilityLocationStreet]] : []),
+            ...(assessmentData?.vulnerabilityLocationSeparation ? [['Vulnerability Location (Separation)', assessmentData.vulnerabilityLocationSeparation]] : []),
+            ...(assessmentData?.vulnerabilityOther ? [['Other Vulnerability', assessmentData.vulnerabilityOther]] : []),
+        ];
+        addSectionTable('Pre-Admission & Vulnerability', preAdmData);
+
+        // ---- Education Information ----
+        const eduData: any[] = [
+            ...(client.education_level ? [['Education Level', client.education_level]] : []),
+            ...(client.school_name ? [['School Name', client.school_name]] : []),
+            ...(client.level_reached ? [['Level Reached', client.level_reached]] : []),
+            ...(client.education_status ? [['Education Status', client.education_status]] : []),
+            ...(assessmentData?.educationCurrentStatus ? [['Current Status', assessmentData.educationCurrentStatus]] : []),
+            ...(assessmentData?.educationCurrentType ? [['Current Type', assessmentData.educationCurrentType]] : []),
+            ...(assessmentData?.educationCurrentMode ? [['Current Mode', assessmentData.educationCurrentMode]] : []),
+            ...(assessmentData?.educationCurrentNameLocation ? [['Current Name & Location', assessmentData.educationCurrentNameLocation]] : []),
+            ...(assessmentData?.educationCurrentLevel ? [['Current Level', assessmentData.educationCurrentLevel]] : []),
+            ...(assessmentData?.educationPerformance ? [['Performance', assessmentData.educationPerformance]] : []),
+            ...(assessmentData?.educationPreviousStatus ? [['Previous Status', assessmentData.educationPreviousStatus]] : []),
+            ...(assessmentData?.educationPreviousType ? [['Previous Type', assessmentData.educationPreviousType]] : []),
+            ...(assessmentData?.educationPreviousMode ? [['Previous Mode', assessmentData.educationPreviousMode]] : []),
+            ...(assessmentData?.educationPreviousNameLocation ? [['Previous Name & Location', assessmentData.educationPreviousNameLocation]] : []),
+        ];
+        addSectionTable('Education Information', eduData);
 
         // ---- Referral & Admission History ----
         const referralData: any[] = [
@@ -402,6 +440,12 @@ const ClientDetails = () => {
 
         // ---- Family Information ----
         const familyData: any[] = [
+            ...(client.family_composition ? [['Family Composition', client.family_composition]] : []),
+            ...(client.siblings_info ? [['Siblings Info', client.siblings_info]] : []),
+            ...(assessmentData?.parentsLivingTogether ? [['Parents Living Together', assessmentData.parentsLivingTogether]] : []),
+            ...(assessmentData?.contactWithFamily ? [['Contact With Family', assessmentData.contactWithFamily]] : []),
+            ...(assessmentData?.contactWithFamilyWhom ? [['Contact With Whom', assessmentData.contactWithFamilyWhom]] : []),
+            ...(assessmentData?.familyVisitFrequency ? [['Visit Frequency', assessmentData.familyVisitFrequency]] : []),
             ...(client.father_name ? [['Father Name', client.father_name]] : []),
             ...(client.father_status ? [['Father Status', client.father_status]] : []),
             ...(client.father_occupation ? [['Father Occupation', client.father_occupation]] : []),
@@ -453,6 +497,7 @@ const ClientDetails = () => {
             ...(client.rescue_committal_date ? [['Date', new Date(client.rescue_committal_date).toLocaleDateString()]] : []),
             ...(client.rescue_location ? [['Location', client.rescue_location]] : []),
             ...(client.rescue_dispatch_officer ? [['Officer', client.rescue_dispatch_officer]] : []),
+            ...(client.rescue_details ? [['Details', client.rescue_details]] : []),
         ];
         addSectionTable('Rescue Details', rescueData);
 
@@ -764,6 +809,10 @@ const ClientDetails = () => {
                     <CardContent className="pt-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admission Form</span><p className="text-sm font-medium text-foreground">{assessmentData?.otherAdmissionForms || "Standard"}</p></div>
+                            {client.admission_type && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admission Type</span><p className="text-sm font-medium text-foreground">{client.admission_type}</p></div>}
+                            {client.admission_type_details && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admission Details</span><p className="text-sm font-medium text-foreground">{client.admission_type_details}</p></div>}
+                            {assessmentData?.currentCarePlacementType && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Placement</span><p className="text-sm font-medium text-foreground">{assessmentData.currentCarePlacementType}</p></div>}
+                            {assessmentData?.currentCarePlacementOther && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Placement (Other)</span><p className="text-sm font-medium text-foreground">{assessmentData.currentCarePlacementOther}</p></div>}
 
                             {/* Partner Details */}
                             {(client.partner_name || client.partner_contact_person || client.partner_contact) && (
@@ -812,6 +861,57 @@ const ClientDetails = () => {
                     </CardContent>
                 </Card>
 
+                {/* Pre-Admission & Vulnerability */}
+                <Card className="border-secondary/20 shadow-sm hover:shadow-md transition-shadow duration-200 mb-6">
+                    <CardHeader className="py-3 px-4 border-b border-secondary/20 bg-secondary/10">
+                        <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
+                            <Home className="h-5 w-5 text-secondary" />
+                            Pre-Admission & Vulnerability
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                            {assessmentData?.preAdmissionLiving && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Living Situation</span><p className="text-sm font-medium text-foreground">{assessmentData.preAdmissionLiving}</p></div>}
+                            {assessmentData?.preAdmissionPerson1Name && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Primary Contact Name</span><p className="text-sm font-medium text-foreground">{assessmentData.preAdmissionPerson1Name}</p></div>}
+                            {assessmentData?.preAdmissionPerson1Rel && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Relationship</span><p className="text-sm font-medium text-foreground">{assessmentData.preAdmissionPerson1Rel}</p></div>}
+                            {assessmentData?.preAdmissionPhone && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Phone</span><p className="text-sm font-medium text-foreground">{assessmentData.preAdmissionPhone}</p></div>}
+                            {assessmentData?.preAdmissionIsCCI && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">In CCI?</span><p className="text-sm font-medium text-foreground">{assessmentData.preAdmissionIsCCI}</p></div>}
+                            {assessmentData?.preAdmissionCCIDetails && <div className="space-y-1 sm:col-span-2"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">CCI Details</span><p className="text-sm font-medium text-foreground">{assessmentData.preAdmissionCCIDetails}</p></div>}
+                            {assessmentData?.vulnerabilityType && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Vulnerability Type</span><p className="text-sm font-medium text-foreground">{assessmentData.vulnerabilityType}</p></div>}
+                            {assessmentData?.vulnerabilityLocationStreet && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location (Street)</span><p className="text-sm font-medium text-foreground">{assessmentData.vulnerabilityLocationStreet}</p></div>}
+                            {assessmentData?.vulnerabilityLocationSeparation && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location (Separation)</span><p className="text-sm font-medium text-foreground">{assessmentData.vulnerabilityLocationSeparation}</p></div>}
+                            {assessmentData?.vulnerabilityOther && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Other Vulnerability</span><p className="text-sm font-medium text-foreground">{assessmentData.vulnerabilityOther}</p></div>}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Education Information */}
+                <Card className="border-secondary/20 shadow-sm hover:shadow-md transition-shadow duration-200 mb-6">
+                    <CardHeader className="py-3 px-4 border-b border-secondary/20 bg-secondary/10">
+                        <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
+                            <BookOpen className="h-5 w-5 text-secondary" />
+                            Education Information
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                            {client.education_level && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Education Level</span><p className="text-sm font-medium text-foreground">{client.education_level}</p></div>}
+                            {client.school_name && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">School Name</span><p className="text-sm font-medium text-foreground">{client.school_name}</p></div>}
+                            {client.level_reached && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Level Reached</span><p className="text-sm font-medium text-foreground">{client.level_reached}</p></div>}
+                            {client.education_status && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Education Status</span><p className="text-sm font-medium text-foreground">{client.education_status}</p></div>}
+                            {assessmentData?.educationCurrentStatus && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Status</span><p className="text-sm font-medium text-foreground">{assessmentData.educationCurrentStatus}</p></div>}
+                            {assessmentData?.educationCurrentType && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Type</span><p className="text-sm font-medium text-foreground">{assessmentData.educationCurrentType}</p></div>}
+                            {assessmentData?.educationCurrentMode && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Mode</span><p className="text-sm font-medium text-foreground">{assessmentData.educationCurrentMode}</p></div>}
+                            {assessmentData?.educationCurrentNameLocation && <div className="space-y-1 sm:col-span-2"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Name & Location</span><p className="text-sm font-medium text-foreground">{assessmentData.educationCurrentNameLocation}</p></div>}
+                            {assessmentData?.educationCurrentLevel && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Level</span><p className="text-sm font-medium text-foreground">{assessmentData.educationCurrentLevel}</p></div>}
+                            {assessmentData?.educationPerformance && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Performance</span><p className="text-sm font-medium text-foreground">{assessmentData.educationPerformance}</p></div>}
+                            {assessmentData?.educationPreviousStatus && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Status</span><p className="text-sm font-medium text-foreground">{assessmentData.educationPreviousStatus}</p></div>}
+                            {assessmentData?.educationPreviousType && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Type</span><p className="text-sm font-medium text-foreground">{assessmentData.educationPreviousType}</p></div>}
+                            {assessmentData?.educationPreviousMode && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Mode</span><p className="text-sm font-medium text-foreground">{assessmentData.educationPreviousMode}</p></div>}
+                            {assessmentData?.educationPreviousNameLocation && <div className="space-y-1 sm:col-span-2"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Name & Location</span><p className="text-sm font-medium text-foreground">{assessmentData.educationPreviousNameLocation}</p></div>}
+                        </div>
+                    </CardContent>
+                </Card>
                 {/* Family Information */}
                 {(
                     (client.parents && client.parents.length > 0) ||
@@ -879,6 +979,12 @@ const ClientDetails = () => {
                                                     {client.guardian_occupation && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Occupation</span><p className="text-sm font-medium text-foreground">{client.guardian_occupation}</p></div>}
                                                     {client.guardian_contact && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</span><p className="text-sm font-medium text-foreground">{client.guardian_contact}</p></div>}
                                                     {client.guardian_location && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</span><p className="text-sm font-medium text-foreground">{client.guardian_location}</p></div>}
+                                            {client.family_composition && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Family Composition</span><p className="text-sm font-medium text-foreground">{client.family_composition}</p></div>}
+                                            {client.siblings_info && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Siblings Info</span><p className="text-sm font-medium text-foreground">{client.siblings_info}</p></div>}
+                                            {assessmentData?.parentsLivingTogether && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parents Living Together</span><p className="text-sm font-medium text-foreground">{assessmentData.parentsLivingTogether}</p></div>}
+                                            {assessmentData?.contactWithFamily && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact With Family</span><p className="text-sm font-medium text-foreground">{assessmentData.contactWithFamily}</p></div>}
+                                            {assessmentData?.contactWithFamilyWhom && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact With Whom</span><p className="text-sm font-medium text-foreground">{assessmentData.contactWithFamilyWhom}</p></div>}
+                                            {assessmentData?.familyVisitFrequency && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Visit Frequency</span><p className="text-sm font-medium text-foreground">{assessmentData.familyVisitFrequency}</p></div>}
                                                 </div>
                                             </div>
                                         )}
@@ -1036,6 +1142,7 @@ const ClientDetails = () => {
                                 <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date</span><p className="text-sm font-medium text-foreground">{client.rescue_committal_date ? new Date(client.rescue_committal_date).toLocaleDateString() : 'N/A'}</p></div>
                                 <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</span><p className="text-sm font-medium text-foreground">{client.rescue_location || 'N/A'}</p></div>
                                 <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Officer</span><p className="text-sm font-medium text-foreground">{client.rescue_dispatch_officer || 'N/A'}</p></div>
+                                {client.rescue_details && <div className="space-y-1 sm:col-span-2"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rescue Details</span><p className="text-sm font-medium text-foreground">{client.rescue_details}</p></div>}
                             </div>
                         </CardContent>
                     </Card>
@@ -1114,25 +1221,6 @@ const ClientDetails = () => {
 
                 {/* Health & Wellbeing */}
                 {assessmentData && (
-                    assessmentData.healthGrowth ||
-                    assessmentData.healthHistory ||
-                    assessmentData.healthCurrent ||
-                    assessmentData.healthCurrentStatus ||
-                    assessmentData.healthChronic ||
-                    assessmentData.healthChronicStatus ||
-                    assessmentData.healthMeds ||
-                    assessmentData.healthMedsStatus ||
-                    assessmentData.healthAllergies ||
-                    assessmentData.healthAllergyStatus ||
-                    assessmentData.healthImmunization ||
-                    assessmentData.healthFeeding ||
-                    assessmentData.hasVisionDifficulty ||
-                    assessmentData.hasHearingDifficulty ||
-                    assessmentData.hasMobilityDifficulty ||
-                    assessmentData.hasCognitiveDifficulty ||
-                    assessmentData.hasSelfCareDifficulty ||
-                    assessmentData.hasCommDifficulty
-                ) && (
                         <Card className="border-red-500/20 shadow-sm hover:shadow-md transition-shadow duration-200">
                             <CardHeader className="py-3 px-4 border-b border-red-500/20 bg-red-500/10">
                                 <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
@@ -1143,7 +1231,7 @@ const ClientDetails = () => {
                             <CardContent className="pt-4">
                                 <div className="space-y-6">
                                     {/* Health Status Group */}
-                                    {(assessmentData.healthCurrent || assessmentData.healthChronic || assessmentData.healthHistory) && (
+                                    {(assessmentData.healthCurrent || assessmentData.healthCurrentStatus || assessmentData.healthChronic || assessmentData.healthChronicStatus || assessmentData.healthHistory) && (
                                         <div>
                                             <h4 className="text-xs font-bold uppercase tracking-wide text-secondary mb-3 flex items-center gap-2">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span> Health Status
@@ -1185,7 +1273,7 @@ const ClientDetails = () => {
                                     )}
 
                                     {/* Medical Care Group */}
-                                    {(assessmentData.healthMeds || assessmentData.healthAllergies || assessmentData.healthImmunization) && (
+                                    {(assessmentData.healthMeds || assessmentData.healthMedsStatus || assessmentData.healthAllergies || assessmentData.healthAllergyStatus || assessmentData.healthImmunization || assessmentData.healthImmunizationStatus) && (
                                         <div>
                                             <h4 className="text-xs font-bold uppercase tracking-wide text-secondary mb-3 flex items-center gap-2">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span> Medical Care & Needs
