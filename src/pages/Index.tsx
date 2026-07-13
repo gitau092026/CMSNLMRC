@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Users, Home, Presentation, Stethoscope, Calendar, RefreshCw } from "lucide-react";
+import { Users, Home, Calendar, TrendingUp, Medal, Activity, ArrowUpRight, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MetricCard } from "@/components/MetricCard";
 import { useDashboardStats, DateRangeFilter } from "@/hooks/useDashboardStats";
 
 // Charts
 import { AdmissionsExitsChart } from "@/components/dashboard/AdmissionsExitsChart";
 import { DemographicsChart } from "@/components/dashboard/DemographicsChart";
 import { ClientStatusChart } from "@/components/ClientStatusChart";
+import { PlacementChart } from "@/components/dashboard/PlacementChart";
+import { AftercareChart } from "@/components/dashboard/AftercareChart";
 
 const LABEL_MAP: Record<DateRangeFilter, string> = {
   "7d": "Last 7 Days",
@@ -21,22 +22,59 @@ const Index = () => {
   const [dateRange, setDateRange] = useState<DateRangeFilter>("all");
   const { stats, loading } = useDashboardStats(dateRange);
 
-  return (
-    <div className="min-h-screen bg-slate-50 w-full max-w-full font-sans">
+  const kpiCards = [
+    {
+      label: "Total Clients",
+      value: stats?.totalClients ?? 0,
+      sub: `${stats?.activeClients ?? 0} active`,
+      icon: Users,
+      accent: "from-green-500 to-emerald-600",
+    },
+    {
+      label: "Home Visits",
+      value: stats?.totalHomeVisits ?? 0,
+      sub: "This period",
+      icon: Home,
+      accent: "from-yellow-400 to-amber-500",
+    },
+    {
+      label: "Alumni",
+      value: (stats?.clientStatusData?.filter(s =>
+        ["Alumni - Placed", "Alumni - Awaiting Placement", "Alumni", "Complete", "Graduated"].includes(s.name)
+      ).reduce((sum, s) => sum + s.value, 0)) ?? 0,
+      sub: "Graduates",
+      icon: Medal,
+      accent: "from-orange-500 to-orange-600",
+    },
+    {
+      label: "Admissions",
+      value: stats?.admissions ?? 0,
+      sub: "This period",
+      icon: TrendingUp,
+      accent: "from-red-500 to-rose-600",
+    },
+  ];
 
-      {/* Hero Header */}
-      <div className="sticky top-14 z-10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 h-20 flex items-center px-4 sm:px-8 w-full shadow-md">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-orange-400 via-transparent to-transparent pointer-events-none" />
-        <div className="relative w-full flex justify-between items-center">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-tight">System Overview</h1>
-            <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5">Analytics & decision-making metrics</p>
+  return (
+    <div className="min-h-screen bg-[#f4f6fb] w-full max-w-full">
+
+      {/* Header */}
+      <div className="sticky top-14 z-10 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-8 h-14 sm:h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="p-1.5 bg-green-600 rounded-lg flex-shrink-0">
+              <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">System Overview</h1>
+              <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:block">Analytics & decision-making metrics</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-white/10 border border-white/10 rounded-xl px-3 py-2 backdrop-blur-sm">
-            <Calendar className="h-4 w-4 text-slate-400 flex-shrink-0" />
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 sm:px-3 py-1.5 flex-shrink-0">
+            <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400 flex-shrink-0" />
             <Select value={dateRange} onValueChange={(val: DateRangeFilter) => setDateRange(val)}>
-              <SelectTrigger className="w-[130px] h-8 bg-transparent text-white border-0 font-semibold text-sm focus:ring-0 shadow-none p-0">
+              <SelectTrigger className="h-6 sm:h-7 bg-transparent text-slate-700 border-0 font-semibold text-xs sm:text-sm focus:ring-0 shadow-none p-0 w-[100px] sm:w-[130px]">
                 <SelectValue placeholder="Timeframe" />
               </SelectTrigger>
               <SelectContent>
@@ -51,72 +89,84 @@ const Index = () => {
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
-        {/* Active filter badge */}
+        {/* Period badge */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Showing:</span>
-          <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 border border-orange-200 text-xs font-bold px-3 py-1 rounded-full">
-            <RefreshCw className="h-3 w-3" />
+          <span className="text-[10px] sm:text-xs font-medium text-slate-400">Viewing:</span>
+          <span className="text-[10px] sm:text-xs font-semibold text-orange-700 bg-orange-50 border border-orange-200 px-2 sm:px-2.5 py-0.5 rounded-full">
             {LABEL_MAP[dateRange]}
           </span>
         </div>
 
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          <MetricCard
-            title="Total Clients"
-            value={stats?.totalClients || 0}
-            subtitle={`${stats?.activeClients || 0} active currently`}
-            icon={Users}
-            variant="primary"
-            loading={loading}
-          />
-          <MetricCard
-            title="Home Visits"
-            value={stats?.totalHomeVisits || 0}
-            subtitle="Conducted in period"
-            icon={Home}
-            variant="success"
-            loading={loading}
-          />
-          <MetricCard
-            title="Counselling Sessions"
-            value={stats?.totalCounsellingSessions || 0}
-            subtitle="Recorded in period"
-            icon={Presentation}
-            variant="warning"
-            loading={loading}
-          />
-          <MetricCard
-            title="Medical Interventions"
-            value={stats?.totalMedicalRecords || 0}
-            subtitle="Recorded in period"
-            icon={Stethoscope}
-            variant="danger"
-            loading={loading}
-          />
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {kpiCards.map((card) => (
+            <div
+              key={card.label}
+              className={`bg-gradient-to-br ${card.accent} rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 sm:hover:-translate-y-0.5 p-4 sm:p-5 flex flex-col gap-2 sm:gap-3 group relative overflow-hidden`}
+            >
+              <div className="absolute -top-4 -right-4 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10" />
+              <div className="absolute -bottom-5 -left-5 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/5" />
+
+              <div className="relative flex items-start justify-between">
+                <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-sm">
+                  <card.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                </div>
+                <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/40 group-hover:text-white/70 transition-colors" />
+              </div>
+
+              <div className="relative">
+                {loading ? (
+                  <div className="space-y-1.5">
+                    <div className="h-6 sm:h-8 w-12 sm:w-16 bg-white/20 rounded-lg animate-pulse" />
+                    <div className="h-2.5 w-16 sm:w-24 bg-white/10 rounded animate-pulse" />
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-2xl sm:text-3xl font-extrabold text-white leading-none tracking-tight">{card.value}</p>
+                    <p className="text-[10px] sm:text-xs text-white/70 font-semibold mt-1 sm:mt-1.5 uppercase tracking-wide">{card.label}</p>
+                    <p className="text-[9px] sm:text-[11px] text-white/60 mt-0.5 hidden sm:block">{card.sub}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Demographics + Admissions/Exits */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-          <div className="lg:col-span-1">
-            <DemographicsChart
-              data={stats?.demographicsData || []}
-              loading={loading}
-            />
+        {/* Section: Trends */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Trends</span>
+            <div className="flex-1 h-px bg-slate-200" />
           </div>
-          <div className="lg:col-span-2">
-            <AdmissionsExitsChart
-              data={stats?.admissionsExitsData || []}
-              loading={loading}
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="lg:col-span-1">
+              <DemographicsChart data={stats?.demographicsData || []} loading={loading} />
+            </div>
+            <div className="lg:col-span-2">
+              <AdmissionsExitsChart data={stats?.admissionsExitsData || []} loading={loading} />
+            </div>
           </div>
         </div>
 
-        {/* Client Status — Full Width */}
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-          <ClientStatusChart data={stats?.clientStatusData || []} loading={loading} />
+        {/* Section: Distribution */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Distribution</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div>
+              <ClientStatusChart data={stats?.clientStatusData || []} loading={loading} />
+            </div>
+            <div>
+              <PlacementChart data={stats?.reunificationData || []} loading={loading} />
+            </div>
+            <div className="sm:col-span-2 lg:col-span-1">
+              <AftercareChart data={stats?.placementData || []} loading={loading} />
+            </div>
+          </div>
         </div>
 
       </div>

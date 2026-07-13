@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { BarChart2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AdmissionsExitsChartProps {
   data: { month: string; admissions: number; exits: number }[];
@@ -10,15 +11,15 @@ interface AdmissionsExitsChartProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white border border-gray-100 rounded-xl shadow-xl p-4 text-sm min-w-[160px]">
-        <p className="font-bold text-gray-800 mb-2 border-b pb-1">{label}</p>
+      <div className="bg-white border border-slate-100 rounded-xl shadow-xl p-3 text-sm min-w-[150px]">
+        <p className="font-bold text-slate-700 mb-2 text-xs uppercase tracking-wide">{label}</p>
         {payload.map((p: any) => (
-          <div key={p.name} className="flex items-center justify-between gap-4 py-0.5">
+          <div key={p.name} className="flex items-center justify-between gap-6 py-0.5">
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: p.fill }} />
-              <span className="text-gray-500 text-xs">{p.name}</span>
+              <span className="w-2 h-2 rounded-sm" style={{ background: p.fill }} />
+              <span className="text-slate-500 text-xs">{p.name}</span>
             </div>
-            <span className="font-bold text-gray-800">{p.value}</span>
+            <span className="font-bold text-slate-800">{p.value}</span>
           </div>
         ))}
       </div>
@@ -29,64 +30,65 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export const AdmissionsExitsChart = ({ data, loading }: AdmissionsExitsChartProps) => {
   return (
-    <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white h-full">
-      <CardHeader className="pb-2 px-6 pt-6">
+    <Card className="border border-slate-100 shadow-sm rounded-2xl overflow-hidden bg-white h-full">
+      <CardHeader className="pb-2 px-5 pt-5 border-b border-slate-50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-50 rounded-xl">
-              <BarChart2 className="h-5 w-5 text-orange-600" />
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 bg-orange-50 rounded-lg">
+              <BarChart2 className="h-4 w-4 text-orange-500" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-900">Admissions vs Exits</h3>
-              <p className="text-xs text-gray-400 font-medium mt-0.5">Monthly comparison of incoming and outgoing clients</p>
+              <h3 className="text-sm font-bold text-slate-800">Admissions vs Exits</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Monthly client flow comparison</p>
             </div>
           </div>
-          {/* Legend */}
-          <div className="hidden sm:flex items-center gap-4 text-xs font-semibold text-gray-500">
+          <div className="hidden sm:flex items-center gap-4 text-xs font-medium text-slate-400">
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-orange-500" />
+              <span className="w-2.5 h-2.5 rounded-sm bg-green-600" />
               Admissions
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-rose-400" />
+              <span className="w-2.5 h-2.5 rounded-sm bg-red-500" />
               Exits
             </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-2 pb-6">
-        <div className="h-[300px] w-full">
+      <CardContent className="px-2 pb-5 pt-3">
+        <div className="h-[220px] sm:h-[280px] w-full">
           {loading ? (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-full h-full flex flex-col gap-3 p-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-6 w-full rounded" style={{ width: `${60 + i * 8}%` }} />
+              ))}
             </div>
           ) : data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 10, right: 20, left: -10, bottom: 5 }} barGap={4}>
+              <BarChart data={data} margin={{ top: 8, right: 16, left: -12, bottom: 4 }} barGap={4} barCategoryGap="30%">
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis
                   dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
+                  tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
                   dy={8}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
+                  tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
                   dx={-4}
                   allowDecimals={false}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,0,0,0.03)", radius: 4 }} />
-                <Bar dataKey="admissions" name="Admissions" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="exits" name="Exits & Graduations" fill="#fb7185" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(148,163,184,0.06)", radius: 4 }} />
+                <Bar dataKey="admissions" name="Admissions" fill="#16a34a" radius={[5, 5, 0, 0]} maxBarSize={36} />
+                <Bar dataKey="exits" name="Exits" fill="#dc2626" radius={[5, 5, 0, 0]} maxBarSize={36} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed rounded-xl border-slate-100">
-              <BarChart2 className="h-8 w-8 mb-2 opacity-30" />
-              <p className="text-sm font-medium">No admissions / exits data available</p>
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 border-2 border-dashed rounded-xl border-slate-100">
+              <BarChart2 className="h-8 w-8 mb-2 opacity-40" />
+              <p className="text-sm font-medium text-slate-400">No data available</p>
             </div>
           )}
         </div>
