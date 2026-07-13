@@ -99,13 +99,14 @@ const Index = () => {
           </span>
         </div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards — 2 columns on mobile, 4 on desktop */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {kpiCards.map((card) => (
             <div
               key={card.label}
               className={`bg-gradient-to-br ${card.accent} rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 sm:hover:-translate-y-0.5 p-4 sm:p-5 flex flex-col gap-2 sm:gap-3 group relative overflow-hidden`}
             >
+              {/* Background decoration */}
               <div className="absolute -top-4 -right-4 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10" />
               <div className="absolute -bottom-5 -left-5 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/5" />
 
@@ -140,6 +141,7 @@ const Index = () => {
             <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Trends</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
+          {/* Stack on mobile, side-by-side on desktop */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="lg:col-span-1">
               <DemographicsChart data={stats?.demographicsData || []} loading={loading} />
@@ -156,6 +158,7 @@ const Index = () => {
             <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Distribution</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
+          {/* 1 col mobile, 2 col tablet, 3 col desktop */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <ClientStatusChart data={stats?.clientStatusData || []} loading={loading} />

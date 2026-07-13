@@ -102,7 +102,7 @@ export default function Alumni() {
  id, name, status, contact, address,
  aftercare_records (id, institution_workshop, completion_status)
  `)
- .or('status.like.Alumni%,status.eq.Complete')
+ .in('status', ['Alumni - Awaiting Placement', 'Alumni - Placed', 'Complete', 'Alumni', 'Graduated'])
  .order('name', { ascending: true });
 
  if (clientsError) throw clientsError;
@@ -124,25 +124,25 @@ export default function Alumni() {
  }
  }
 
- // Auto-fix: Update clients with aftercare records to"Alumni - Placed" status
- if (clientsData && clientsData.length > 0) {
- const clientsToUpdate = clientsData.filter(
- client =>
- client.status === 'Alumni - Awaiting Placement' &&
- client.aftercare_records &&
- client.aftercare_records.length > 0
- );
+      // Auto-fix: Update statuses based on placements and graduation
+      if (clientsData && clientsData.length > 0) {
+        const clientsToUpdate = clientsData.filter(
+          client => 
+            (client.status === 'Alumni - Awaiting Placement' && client.aftercare_records && client.aftercare_records.length > 0) ||
+            client.status === 'Graduated'
+        );
 
- if (clientsToUpdate.length > 0) {
- // Update all clients that have aftercare records but wrong status
- const updatePromises = clientsToUpdate.map(client =>
- supabase
- .from('clients')
- .update({ status: 'Alumni - Placed' })
- .eq('id', client.id)
- );
+        if (clientsToUpdate.length > 0) {
+          const updatePromises = clientsToUpdate.map(client => {
+            const hasPlacement = client.aftercare_records && client.aftercare_records.length > 0;
+            const newStatus = hasPlacement ? 'Alumni - Placed' : 'Alumni - Awaiting Placement';
+            return supabase
+              .from('clients')
+              .update({ status: newStatus })
+              .eq('id', client.id);
+          });
 
- await Promise.all(updatePromises);
+          await Promise.all(updatePromises);
 
  // Refresh the data after updates
  const { data: refreshedData, error: refreshError } = await supabase
@@ -151,7 +151,7 @@ export default function Alumni() {
  id, name, status, contact, address,
  aftercare_records (id, institution_workshop, completion_status)
  `)
- .or('status.like.Alumni%,status.eq.Complete')
+ .in('status', ['Alumni - Awaiting Placement', 'Alumni - Placed', 'Complete', 'Alumni', 'Graduated'])
  .order('name', { ascending: true });
 
  if (!refreshError && refreshedData) {
@@ -251,10 +251,6 @@ export default function Alumni() {
  Celebrating success stories and tracking alumni progress
  </p>
  </div>
- <Button className="bg-white text-orange-600 hover:bg-orange-50">
- <UserPlus className="h-4 w-4 mr-2" />
- Add Alumni
- </Button>
  </div>
  </div>
 
@@ -334,6 +330,7 @@ export default function Alumni() {
  <SelectItem value="Alumni - Awaiting Placement">Awaiting Placement</SelectItem>
  <SelectItem value="Alumni - Placed">Placed</SelectItem>
  <SelectItem value="Complete">Complete</SelectItem>
+ <SelectItem value="Graduated">Graduated</SelectItem>
  </SelectContent>
  </Select>
  <Button

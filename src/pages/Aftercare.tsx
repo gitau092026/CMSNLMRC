@@ -290,238 +290,229 @@ const Aftercare = () => {
  <p className="text-muted-foreground mt-1">Placement and follow-up tracking</p>
  </div>
 
- <Card>
- <CardContent className="p-0">
- {loading ? (
- <div className="p-8 text-center text-muted-foreground">
- Loading clients...
- </div>
- ) : clients.length === 0 ? (
- <div className="p-8 text-center text-muted-foreground">
- No graduated clients found
- </div>
- ) : (
- <div className="divide-y divide-border">
- {clients.map((client) => {
- const aftercareRecord = client.aftercare_records?.[0];
- const isExpanded = expandedClient === client.id;
+  {loading ? (
+    <Card className="border-border">
+      <CardContent className="p-8 text-center text-muted-foreground">
+        Loading clients...
+      </CardContent>
+    </Card>
+  ) : clients.length === 0 ? (
+    <Card className="border-border">
+      <CardContent className="p-8 text-center text-muted-foreground">
+        No graduated clients found
+      </CardContent>
+    </Card>
+  ) : (
+    <div className="space-y-4">
+      {clients.map((client) => {
+        const latestRecord = client.aftercare_records && client.aftercare_records.length > 0
+          ? [...client.aftercare_records].sort((a, b) => {
+              const dateA = a.placement_date ? new Date(a.placement_date).getTime() : 0;
+              const dateB = b.placement_date ? new Date(b.placement_date).getTime() : 0;
+              return dateB - dateA;
+            })[0]
+          : null;
 
- return (
- <Collapsible
- key={client.id}
- open={isExpanded}
- onOpenChange={() => setExpandedClient(isExpanded ? null : client.id)}
- >
- <CollapsibleTrigger className="w-full">
- <div className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
- <div className="w-1 h-8 bg-success rounded-full" />
- <div className="flex-1 text-left">
- <span className="font-medium text-foreground">{client.name}</span>
- </div>
- {aftercareRecord && (
- <Badge className={`${getStatusBadgeClass(aftercareRecord.completion_status)} text-xs`}>
- {aftercareRecord.completion_status}
- </Badge>
- )}
- {isExpanded ? (
- <ChevronDown className="h-5 w-5 text-muted-foreground" />
- ) : (
- <ChevronRight className="h-5 w-5 text-muted-foreground" />
- )}
- </div>
- </CollapsibleTrigger>
+        return (
+          <Card key={client.id} className="border-border hover:shadow-md transition-shadow">
+            <CardContent className="p-5 space-y-4">
+              {/* Top Row: Client Info and Primary Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-3">
+                <div className="flex flex-wrap items-center gap-3 flex-1">
+                  <span className="font-semibold text-lg text-foreground">{client.name}</span>
+                  <Badge className="bg-success/10 text-success hover:bg-success/20 border-success/20 text-xs">
+                    {client.status}
+                  </Badge>
+                  {latestRecord && (
+                    <Badge className={`${getStatusBadgeClass(latestRecord.completion_status)} text-xs capitalize`}>
+                      Latest: {latestRecord.completion_status}
+                    </Badge>
+                  )}
+                  {client.contact && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {client.contact}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/aftercare/add/${client.id}`)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Placement
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => navigate(`/clients/${client.id}`)}
+                  >
+                    Profile
+                  </Button>
+                </div>
+              </div>
 
- <CollapsibleContent>
- <div className="px-4 pb-4 pl-8 space-y-4 bg-muted/30">
- <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
- <Phone className="h-4 w-4" />
- <span>{client.contact || 'N/A'}</span>
- <span className="mx-2">•</span>
- <Badge className="bg-success/10 text-success hover:bg-success/20 border-success/20 text-xs">
- {client.status}
- </Badge>
- </div>
+              {/* Placements List (Inline, no sub cards) */}
+              {client.aftercare_records && client.aftercare_records.length > 0 ? (
+                <div className="space-y-4 divide-y divide-border/60">
+                  {client.aftercare_records.map((record, index) => (
+                    <div key={record.id} className={`pt-3 ${index === 0 ? 'pt-0 border-t-0' : ''} space-y-2`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-primary">Placement #{index + 1}</span>
+                        <div className="flex gap-2">
+                          {canEdit && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/aftercare/add/${client.id}?edit=${record.id}`)}
+                              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+                            >
+                              <Edit className="h-3.5 w-3.5 mr-1" />
+                              Edit
+                            </Button>
+                          )}
+                          {isAdmin && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Aftercare Record</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this aftercare record? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteRecord(record.id)}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </div>
 
- {aftercareRecord ? (
- <div className="space-y-3 border-l-2 border-success/30 pl-4">
- {canEdit && (
- <Button
- variant="outline"
- size="sm"
- onClick={(e) => {
- e.stopPropagation();
- navigate(`/aftercare/add/${client.id}`);
- }}
- className="mb-2"
- >
- <Plus className="h-4 w-4 mr-1" />
- Add Another Placement
- </Button>
- )}
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
- <div className="flex items-start gap-2 text-muted-foreground">
- <Building className="h-4 w-4 mt-0.5 shrink-0" />
- <div>
- <span className="font-medium text-foreground">Institution/Workshop:</span>{' '}
- {aftercareRecord.institution_workshop}
- </div>
- </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                        <div className="flex items-start gap-2 text-muted-foreground">
+                          <Building className="h-4 w-4 mt-0.5 shrink-0 text-primary/70" />
+                          <div>
+                            <span className="font-medium text-foreground">Institution/Workshop:</span>{' '}
+                            {record.institution_workshop}
+                          </div>
+                        </div>
 
- {aftercareRecord.placement_course && (
- <div className="flex items-start gap-2 text-muted-foreground">
- <BookOpen className="h-4 w-4 mt-0.5 shrink-0" />
- <div>
- <span className="font-medium text-foreground">Course/Class:</span>{' '}
- {aftercareRecord.placement_course}
- </div>
- </div>
- )}
+                        {record.placement_course && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <BookOpen className="h-4 w-4 mt-0.5 shrink-0 text-primary/70" />
+                            <div>
+                              <span className="font-medium text-foreground">Course/Class:</span>{' '}
+                              {record.placement_course}
+                            </div>
+                          </div>
+                        )}
 
- {aftercareRecord.placement_type && (
- <div className="flex items-start gap-2 text-muted-foreground">
- <Briefcase className="h-4 w-4 mt-0.5 shrink-0" />
- <div>
- <span className="font-medium text-foreground">
- {aftercareRecord.placement_type === 'vocational_training' ? 'Vocational Training' : 'Apprenticeship'}:
- </span>{' '}
- {aftercareRecord.placement_type_details || 'No details provided'}
- </div>
- </div>
- )}
+                        {record.placement_type && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <Briefcase className="h-4 w-4 mt-0.5 shrink-0 text-primary/70" />
+                            <div>
+                              <span className="font-medium text-foreground">
+                                {record.placement_type === 'vocational_training' 
+                                  ? 'Vocational Training' 
+                                  : record.placement_type === 'school'
+                                  ? 'School'
+                                  : 'Apprenticeship'}:
+                              </span>{' '}
+                              {record.placement_type_details || 'No details provided'}
+                            </div>
+                          </div>
+                        )}
 
- {aftercareRecord.placement_location && (
- <div className="flex items-start gap-2 text-muted-foreground">
- <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
- <div>
- <span className="font-medium text-foreground">Location:</span>{' '}
- {aftercareRecord.placement_location}
- </div>
- </div>
- )}
+                        {record.placement_location && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-primary/70" />
+                            <div>
+                              <span className="font-medium text-foreground">Location:</span>{' '}
+                              {record.placement_location}
+                            </div>
+                          </div>
+                        )}
 
- {aftercareRecord.contact_person && (
- <div className="flex items-start gap-2 text-muted-foreground">
- <User className="h-4 w-4 mt-0.5 shrink-0" />
- <div>
- <span className="font-medium text-foreground">Contact:</span>{' '}
- {aftercareRecord.contact_person}
- {aftercareRecord.contact_phone && ` (${aftercareRecord.contact_phone})`}
- </div>
- </div>
- )}
+                        {record.contact_person && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <User className="h-4 w-4 mt-0.5 shrink-0 text-primary/70" />
+                            <div>
+                              <span className="font-medium text-foreground">Contact:</span>{' '}
+                              {record.contact_person}
+                              {record.contact_phone && ` (${record.contact_phone})`}
+                            </div>
+                          </div>
+                        )}
 
- {aftercareRecord.placement_fees != null && (
- <div className="flex items-start gap-2 text-muted-foreground">
- <DollarSign className="h-4 w-4 mt-0.5 shrink-0" />
- <div>
- <span className="font-medium text-foreground">Fees:</span>{' '}
- {aftercareRecord.placement_fees.toLocaleString()}
- </div>
- </div>
- )}
+                        {record.placement_fees != null && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <DollarSign className="h-4 w-4 mt-0.5 shrink-0 text-primary/70" />
+                            <div>
+                              <span className="font-medium text-foreground">Fees:</span>{' '}
+                              {record.placement_fees.toLocaleString()}
+                            </div>
+                          </div>
+                        )}
 
- {aftercareRecord.placement_date && (
- <div className="flex items-start gap-2 text-muted-foreground">
- <Calendar className="h-4 w-4 mt-0.5 shrink-0" />
- <div>
- <span className="font-medium text-foreground">Placement Date:</span>{' '}
- {formatDate(aftercareRecord.placement_date)}
- </div>
- </div>
- )}
+                        {record.placement_date && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <Calendar className="h-4 w-4 mt-0.5 shrink-0 text-primary/70" />
+                            <div>
+                              <span className="font-medium text-foreground">Placement Date:</span>{' '}
+                              {formatDate(record.placement_date)}
+                            </div>
+                          </div>
+                        )}
 
- {aftercareRecord.completion_date && (
- <div className="flex items-start gap-2 text-muted-foreground">
- <Calendar className="h-4 w-4 mt-0.5 shrink-0" />
- <div>
- <span className="font-medium text-foreground">Completion Date:</span>{' '}
- {formatDate(aftercareRecord.completion_date)}
- </div>
- </div>
- )}
- </div>
+                        {record.completion_date && (
+                          <div className="flex items-start gap-2 text-muted-foreground">
+                            <Calendar className="h-4 w-4 mt-0.5 shrink-0 text-primary/70" />
+                            <div>
+                              <span className="font-medium text-foreground">Completion Date:</span>{' '}
+                              {formatDate(record.completion_date)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
- <div className="flex gap-2">
- {canEdit && (
- <Button
- variant="outline"
- size="sm"
- onClick={(e) => {
- e.stopPropagation();
- navigate(`/aftercare/add/${client.id}?edit=${aftercareRecord.id}`);
- }}
- >
- <Edit className="h-4 w-4 mr-1" />
- Edit Placement
- </Button>
- )}
- {isAdmin && (
- <AlertDialog>
- <AlertDialogTrigger asChild>
- <Button
- variant="destructive"
- size="sm"
- onClick={(e) => e.stopPropagation()}
- >
- <Trash2 className="h-4 w-4 mr-1" />
- Delete
- </Button>
- </AlertDialogTrigger>
- <AlertDialogContent onClick={(e) => e.stopPropagation()}>
- <AlertDialogHeader>
- <AlertDialogTitle>Delete Aftercare Record</AlertDialogTitle>
- <AlertDialogDescription>
- Are you sure you want to delete this aftercare record? This action cannot be undone.
- </AlertDialogDescription>
- </AlertDialogHeader>
- <AlertDialogFooter>
- <AlertDialogCancel>Cancel</AlertDialogCancel>
- <AlertDialogAction onClick={() => handleDeleteRecord(aftercareRecord.id)}>
- Delete
- </AlertDialogAction>
- </AlertDialogFooter>
- </AlertDialogContent>
- </AlertDialog>
- )}
- <Button
- variant="ghost"
- size="sm"
- onClick={(e) => {
- e.stopPropagation();
- navigate(`/clients/${client.id}`);
- }}
- >
- View Profile
- </Button>
- </div>
- </div>
- ) : (
- <div className="space-y-2">
- <p className="text-sm text-muted-foreground italic">
- No placement record available
- </p>
- <Button
- variant="outline"
- size="sm"
- onClick={(e) => {
- e.stopPropagation();
- navigate(`/aftercare/add/${client.id}`);
- }}
- >
- <Plus className="h-4 w-4 mr-1" />
- Add Placement
- </Button>
- </div>
- )}
- </div>
- </CollapsibleContent>
- </Collapsible>
- );
- })}
- </div>
- )}
- </CardContent>
- </Card>
+                      {record.notes && (
+                        <div className="mt-2 text-sm text-muted-foreground bg-muted/40 p-2.5 rounded border border-border/50">
+                          <span className="font-medium text-foreground">Notes:</span>{' '}
+                          <span className="whitespace-pre-wrap leading-relaxed">{record.notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground italic bg-muted/20 p-4 rounded text-center border border-dashed border-border">
+                  No placement record available.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  )}
  </div>
  </div>
  </div>

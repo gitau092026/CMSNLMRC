@@ -247,7 +247,11 @@ export default function Counselling() {
       });
 
       setExitDialogOpen(false);
-      fetchClients();
+      if (exitFormData.nature_of_discharge === 'Complete') {
+        navigate(`/aftercare/add/${selectedClient.id}`);
+      } else {
+        fetchClients();
+      }
     } catch (error: any) {
       toast({
         title: "Error",

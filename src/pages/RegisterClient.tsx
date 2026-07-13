@@ -543,6 +543,8 @@ const RegisterClient = () => {
         (clientData as any).profile_picture = publicUrl;
       }
 
+      let savedClientId = activeClientId;
+
       if (activeClientId) {
         const { error } = await supabase.from('clients').update(clientData).eq('id', activeClientId);
         if (error) throw error;
@@ -550,6 +552,7 @@ const RegisterClient = () => {
         const { data, error } = await supabase.from('clients').insert([clientData]).select().single();
         if (error) throw error;
         if (data) {
+          savedClientId = data.id;
           setActiveClientId(data.id);
           // Silently update the URL to include the new clientId so refresh doesn't lose context
           const newUrl = new URL(window.location.href);
@@ -560,7 +563,13 @@ const RegisterClient = () => {
       }
 
       toast({ title: "Success", description: shouldNavigate ? "Client & Assessment saved successfully!" : "Progress saved." });
-      if (shouldNavigate) navigate("/clients");
+      if (shouldNavigate) {
+        if (values.clientStatus === 'Complete' || values.clientStatus === 'Alumni - Awaiting Placement') {
+          navigate(`/aftercare/add/${savedClientId}`);
+        } else {
+          navigate("/clients");
+        }
+      }
       return true;
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });

@@ -55,8 +55,8 @@ export function AftercareChart({ data, loading }: AftercareChartProps) {
     <Card className="border border-slate-100 shadow-sm rounded-2xl overflow-hidden bg-white h-full">
       <CardHeader className="pb-2 px-5 pt-5 border-b border-slate-50">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 bg-orange-50 rounded-lg">
-            <Briefcase className="h-4 w-4 text-orange-600" />
+          <div className="p-1.5 bg-sky-50 rounded-lg">
+            <Briefcase className="h-4 w-4 text-sky-600" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-800">Nature of Placements</h3>

@@ -160,10 +160,10 @@ const AddHomeVisit = () => {
     }
 
     // Validate required fields
-    if (!formData.assessmentReport || !formData.caseworkerName) {
+    if (!formData.assessmentReport || !formData.caseworkerName || !formData.natureOfReintegration) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields (Assessment Report and Caseworker Name).",
+        description: "Please fill in all required fields (Assessment Report, Caseworker Name, and Nature of Reintegration).",
         variant: "destructive",
       });
       return;
@@ -530,13 +530,20 @@ const AddHomeVisit = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Nature of Reintegration</label>
-                  <Textarea
-                    placeholder="Describe the nature of reintegration..."
+                  <label className="text-sm font-medium">Nature of Reintegration <span className="text-destructive">*</span></label>
+                  <Select
                     value={formData.natureOfReintegration}
-                    onChange={(e) => setFormData({ ...formData, natureOfReintegration: e.target.value })}
-                    rows={3}
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, natureOfReintegration: value })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select nature of reintegration..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card z-50">
+                      <SelectItem value="Primary family">Primary family</SelectItem>
+                      <SelectItem value="Kinship">Kinship</SelectItem>
+                      <SelectItem value="Supported independent living">Supported independent living</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

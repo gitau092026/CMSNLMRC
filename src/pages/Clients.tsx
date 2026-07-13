@@ -16,6 +16,8 @@ import {
 import { Badge } from"@/components/ui/badge";
 import { Card, CardContent } from"@/components/ui/card";
 import { Skeleton } from"@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
  AlertDialog,
  AlertDialogAction,
@@ -45,6 +47,9 @@ const Clients = () => {
  const [assessmentFilter, setAssessmentFilter] = useState("all");
  const [clients, setClients] = useState<Client[]>([]);
  const [loading, setLoading] = useState(true);
+ const [selectedIds, setSelectedIds] = useState<string[]>([]);
+ const [bulkStatus, setBulkStatus] = useState("");
+ const [bulkLoading, setBulkLoading] = useState(false);
  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
  const [isAdmin, setIsAdmin] = useState(false);
@@ -83,13 +88,16 @@ const Clients = () => {
 
  if (error) throw error;
 
- setClients(data || []);
+ // Only show Active clients — all others are handled in their respective pages
+ const activeClients = (data || []).filter(c => c.status === 'Active');
+
+ setClients(activeClients);
 
  // Calculate stats
- const total = data?.length || 0;
- const active = data?.filter(c => c.status?.toLowerCase() === 'active').length || 0;
- const graduated = data?.filter(c => c.status?.toLowerCase() === 'graduated').length || 0;
- const street = data?.filter(c => c.status?.toLowerCase() === 'street').length || 0;
+ const total = activeClients.length;
+ const active = total;
+ const graduated = 0;
+ const street = 0;
 
  setStats({ total, active, graduated, street });
  } catch (error: any) {
@@ -156,6 +164,36 @@ const Clients = () => {
  });
  }
  };
+
+ const handleBulkStatusUpdate = async () => {
+    if (selectedIds.length === 0 || !bulkStatus) return;
+
+    try {
+      setBulkLoading(true);
+      const { error } = await supabase
+        .from('clients')
+        .update({ status: bulkStatus })
+        .in('id', selectedIds);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Successfully updated status to "${bulkStatus}" for ${selectedIds.length} clients.`
+      });
+
+      setSelectedIds([]);
+      fetchClients();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
  const getAssessmentStatus = (notes: string | null) => {
  if (!notes) return"Pending";
@@ -302,6 +340,38 @@ const Clients = () => {
 
  {/* Client List */}
  <div className="space-y-3">
+  {!loading && filteredClients.length > 0 && (
+    <div className="flex items-center justify-between py-2 px-3 bg-muted/40 rounded-lg border border-border/60">
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="select-all"
+          checked={filteredClients.length > 0 && filteredClients.every(c => selectedIds.includes(c.id))}
+          onCheckedChange={(checked) => {
+            if (checked) {
+              const newSelections = [...selectedIds];
+              filteredClients.forEach(c => {
+                if (!newSelections.includes(c.id)) newSelections.push(c.id);
+              });
+              setSelectedIds(newSelections);
+            } else {
+              const filteredIds = filteredClients.map(c => c.id);
+              setSelectedIds(selectedIds.filter(id => !filteredIds.includes(id)));
+            }
+          }}
+          className="border-2 border-gray-400 dark:border-gray-500 bg-background mr-1"
+        />
+        <Label htmlFor="select-all" className="text-sm font-medium text-muted-foreground cursor-pointer select-none">
+          Select All on Page ({filteredClients.length})
+        </Label>
+      </div>
+      {selectedIds.length > 0 && (
+        <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])} className="text-xs h-7 text-muted-foreground hover:text-foreground">
+          Clear Selections
+        </Button>
+      )}
+    </div>
+  )}
+
  {loading ? (
  // Skeleton Loading State
  Array.from({ length: 5 }).map((_, i) => (
@@ -329,9 +399,20 @@ const Clients = () => {
  </Card>
  ) : (
  filteredClients.map((client) => (
- <Card key={client.id} className="border-border hover:shadow-md transition-shadow">
+ <Card key={client.id} className={`border-border hover:shadow-md transition-shadow ${selectedIds.includes(client.id) ? 'border-primary/40 bg-primary/5' : ''}`}>
  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div className="flex items-center gap-3 flex-1">
+  <Checkbox 
+    checked={selectedIds.includes(client.id)}
+    onCheckedChange={(checked) => {
+      if (checked) {
+        setSelectedIds([...selectedIds, client.id]);
+      } else {
+        setSelectedIds(selectedIds.filter(id => id !== client.id));
+      }
+    }}
+    className="border-2 border-gray-400 dark:border-gray-500 bg-background mr-2"
+  />
  <p className="font-medium text-foreground">{client.name}</p>
  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 shrink-0">
  {client.client_id}
@@ -381,6 +462,51 @@ const Clients = () => {
  </Card>
  ))
  )}
+
+ {/* Bulk Status Update Panel */}
+  {selectedIds.length > 0 && (
+    <Card className="border-primary/30 bg-card shadow-2xl fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-4xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-300 border-2">
+      <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-white bg-primary px-2.5 py-1 rounded-full text-xs">
+            {selectedIds.length}
+          </span>
+          <span className="text-sm font-semibold text-gray-700">clients selected for bulk actions</span>
+        </div>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Select value={bulkStatus} onValueChange={setBulkStatus}>
+            <SelectTrigger className="w-[180px] bg-background border-border">
+              <SelectValue placeholder="Choose Status" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border z-50">
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Alumni - Awaiting Placement">Alumni - Awaiting Placement</SelectItem>
+              <SelectItem value="Alumni - Placed">Alumni - Placed</SelectItem>
+              <SelectItem value="Graduated">Graduated</SelectItem>
+              <SelectItem value="Exited">Exited</SelectItem>
+              <SelectItem value="Escape">Escape</SelectItem>
+              <SelectItem value="Voluntary Discharge">Voluntary Discharge</SelectItem>
+              <SelectItem value="Early Reintegration">Early Reintegration</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            disabled={!bulkStatus || bulkLoading} 
+            onClick={handleBulkStatusUpdate}
+            className="flex-1 md:flex-initial"
+          >
+            {bulkLoading ? "Updating..." : "Update Status"}
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setSelectedIds([])}
+            className="border-border hover:bg-muted"
+          >
+            Cancel
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )}
  </div>
  </div>
 

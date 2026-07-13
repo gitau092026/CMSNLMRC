@@ -272,6 +272,8 @@ const RegisterClient = () => {
         notes: values.notes || ""
       };
 
+      let savedClientId = clientId;
+
       if (clientId && mode === 'edit') {
         const { error } = await supabase
           .from('clients')
@@ -284,18 +286,27 @@ const RegisterClient = () => {
           description: "Client updated successfully!"
         });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('clients')
-          .insert([clientData]);
+          .insert([clientData])
+          .select()
+          .single();
 
         if (error) throw error;
         toast({
           title: "Success",
           description: "Client registered successfully!"
         });
+        if (data) {
+          savedClientId = data.id;
+        }
       }
 
-      navigate("/clients");
+      if (values.clientStatus === 'Complete' || values.clientStatus === 'Alumni - Awaiting Placement') {
+        navigate(`/aftercare/add/${savedClientId}`);
+      } else {
+        navigate("/clients");
+      }
     } catch (error: any) {
       toast({
         title: "Error",

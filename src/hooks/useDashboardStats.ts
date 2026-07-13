@@ -18,6 +18,8 @@ export interface DashboardStats {
   demographicsData: { name: string; value: number; fill: string }[];
   clientStatusData: { name: string; value: number; color: string }[];
   admissionsExitsData: { month: string; admissions: number; exits: number }[];
+  placementData: { name: string; value: number; color: string }[];
+  reunificationData: { name: string; value: number; color: string }[];
 }
 
 const COLORS = [
@@ -45,13 +47,15 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           visitsRes,
           soapNotesRes,
           medicalRes,
-          exitsRes
+          exitsRes,
+          aftercareRes
         ] = await Promise.all([
           supabase.from("clients").select("*"),
           supabase.from("home_visits").select("*"),
           supabase.from("soap_notes").select("*"),
           supabase.from("medical_records").select("*"),
-          supabase.from("exit_records").select("*")
+          supabase.from("exit_records").select("*"),
+          supabase.from("aftercare_records").select("*")
         ]);
 
         if (clientsRes.error) throw clientsRes.error;
@@ -59,12 +63,14 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
         if (soapNotesRes.error) throw soapNotesRes.error;
         if (medicalRes.error) throw medicalRes.error;
         if (exitsRes.error) throw exitsRes.error;
+        if (aftercareRes.error) throw aftercareRes.error;
 
         const allClients = clientsRes.data || [];
         const allVisits = visitsRes.data || [];
         const allSoapNotes = soapNotesRes.data || [];
         const allMedical = medicalRes.data || [];
         const allExits = exitsRes.data || [];
+        const allAftercare = aftercareRes.data || [];
 
         // Determine date range filter
         const now = new Date();
@@ -191,6 +197,37 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
             ...admExitsMap[month]
           }));
 
+        // 5. Placement Types (from aftercare_records)
+        const placementCounts = allAftercare.reduce((acc: Record<string, number>, record) => {
+          const type = record.placement_type?.trim();
+          if (!type) return acc;
+          // Format placement type string (e.g., "vocational_training" -> "Vocational Training")
+          const formattedType = type.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+          acc[formattedType] = (acc[formattedType] || 0) + 1;
+          return acc;
+        }, {});
+
+        const placementData = Object.keys(placementCounts).map((name, index) => ({
+          name,
+          value: placementCounts[name],
+          color: COLORS[index % COLORS.length]
+        }));
+
+        // 6. Nature of Reunification (from home_visits nature_of_reintegration)
+        const reunificationCounts = allVisits.reduce((acc: Record<string, number>, visit) => {
+          const val = visit.nature_of_reintegration?.trim();
+          if (!val) return acc;
+          const normalized = val.charAt(0).toUpperCase() + val.slice(1);
+          acc[normalized] = (acc[normalized] || 0) + 1;
+          return acc;
+        }, {});
+
+        const reunificationData = Object.keys(reunificationCounts).map((name, index) => ({
+          name,
+          value: reunificationCounts[name],
+          color: COLORS[(index + 2) % COLORS.length]
+        }));
+
         setStats({
           totalClients,
           activeClients,
@@ -202,7 +239,9 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           systemActivityData: displayActivityData,
           demographicsData,
           clientStatusData,
-          admissionsExitsData
+          admissionsExitsData,
+          placementData,
+          reunificationData
         });
 
       } catch (err: any) {
