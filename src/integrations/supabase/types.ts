@@ -1,1 +1,1224 @@
-{"types":"export type Json =\n  | string\n  | number\n  | boolean\n  | null\n  | { [key: string]: Json | undefined }\n  | Json[]\n\nexport type Database = {\n  // Allows to automatically instantiate createClient with right options\n  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)\n  __InternalSupabase: {\n    PostgrestVersion: \"13.0.5\"\n  }\n  public: {\n    Tables: {\n      aftercare_records: {\n        Row: {\n          client_id: string\n          completion_date: string | null\n          completion_status: string\n          contact_person: string | null\n          contact_phone: string | null\n          created_at: string\n          created_by: string | null\n          id: string\n          institution_workshop: string\n          notes: string | null\n          placement_course: string | null\n          placement_date: string | null\n          placement_fees: number | null\n          placement_location: string | null\n          placement_type: string | null\n          placement_type_details: string | null\n          updated_at: string\n        }\n        Insert: {\n          client_id: string\n          completion_date?: string | null\n          completion_status?: string\n          contact_person?: string | null\n          contact_phone?: string | null\n          created_at?: string\n          created_by?: string | null\n          id?: string\n          institution_workshop: string\n          notes?: string | null\n          placement_course?: string | null\n          placement_date?: string | null\n          placement_fees?: number | null\n          placement_location?: string | null\n          placement_type?: string | null\n          placement_type_details?: string | null\n          updated_at?: string\n        }\n        Update: {\n          client_id?: string\n          completion_date?: string | null\n          completion_status?: string\n          contact_person?: string | null\n          contact_phone?: string | null\n          created_at?: string\n          created_by?: string | null\n          id?: string\n          institution_workshop?: string\n          notes?: string | null\n          placement_course?: string | null\n          placement_date?: string | null\n          placement_fees?: number | null\n          placement_location?: string | null\n          placement_type?: string | null\n          placement_type_details?: string | null\n          updated_at?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"aftercare_records_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_admission_details\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"aftercare_records_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_disability_assessment\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"aftercare_records_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"clients\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      case_plans: {\n        Row: {\n          case_manager_date: string | null\n          case_manager_name: string | null\n          case_manager_signature: string | null\n          caseworker_date: string | null\n          caseworker_name: string | null\n          caseworker_signature: string | null\n          client_id: string\n          created_at: string | null\n          economic_entries: Json | null\n          economic_goals: string | null\n          education_entries: Json | null\n          education_goals: string | null\n          health_entries: Json | null\n          health_goals: string | null\n          id: string\n          plan_date: string | null\n          protection_entries: Json | null\n          protection_goals: string | null\n          psychosocial_entries: Json | null\n          psychosocial_goals: string | null\n          relationship_entries: Json | null\n          relationship_goals: string | null\n          saved_sections: string[] | null\n          status: string | null\n          updated_at: string | null\n        }\n        Insert: {\n          case_manager_date?: string | null\n          case_manager_name?: string | null\n          case_manager_signature?: string | null\n          caseworker_date?: string | null\n          caseworker_name?: string | null\n          caseworker_signature?: string | null\n          client_id: string\n          created_at?: string | null\n          economic_entries?: Json | null\n          economic_goals?: string | null\n          education_entries?: Json | null\n          education_goals?: string | null\n          health_entries?: Json | null\n          health_goals?: string | null\n          id?: string\n          plan_date?: string | null\n          protection_entries?: Json | null\n          protection_goals?: string | null\n          psychosocial_entries?: Json | null\n          psychosocial_goals?: string | null\n          relationship_entries?: Json | null\n          relationship_goals?: string | null\n          saved_sections?: string[] | null\n          status?: string | null\n          updated_at?: string | null\n        }\n        Update: {\n          case_manager_date?: string | null\n          case_manager_name?: string | null\n          case_manager_signature?: string | null\n          caseworker_date?: string | null\n          caseworker_name?: string | null\n          caseworker_signature?: string | null\n          client_id?: string\n          created_at?: string | null\n          economic_entries?: Json | null\n          economic_goals?: string | null\n          education_entries?: Json | null\n          education_goals?: string | null\n          health_entries?: Json | null\n          health_goals?: string | null\n          id?: string\n          plan_date?: string | null\n          protection_entries?: Json | null\n          protection_goals?: string | null\n          psychosocial_entries?: Json | null\n          psychosocial_goals?: string | null\n          relationship_entries?: Json | null\n          relationship_goals?: string | null\n          saved_sections?: string[] | null\n          status?: string | null\n          updated_at?: string | null\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"case_plans_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_admission_details\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"case_plans_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_disability_assessment\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"case_plans_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"clients\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      clients: {\n        Row: {\n          address: string | null\n          admission_date: string | null\n          admission_type: string | null\n          admission_type_details: string | null\n          age: number | null\n          client_id: string\n          contact: string | null\n          created_at: string | null\n          created_by: string | null\n          date_of_birth: string | null\n          education_level: string | null\n          education_status: string | null\n          family_composition: string | null\n          father_contact: string | null\n          father_location: string | null\n          father_name: string | null\n          father_occupation: string | null\n          father_status: string | null\n          gender: string | null\n          guardian_contact: string | null\n          guardian_location: string | null\n          guardian_name: string | null\n          guardian_occupation: string | null\n          guardian_status: string | null\n          id: string\n          intake_number: string | null\n          level_reached: string | null\n          mother_contact: string | null\n          mother_location: string | null\n          mother_name: string | null\n          mother_occupation: string | null\n          mother_status: string | null\n          name: string\n          nickname: string | null\n          notes: string | null\n          partner_contact: string | null\n          partner_contact_person: string | null\n          partner_name: string | null\n          police_ob_number: string | null\n          profile_picture: string | null\n          rescue_details: string | null\n          school_name: string | null\n          siblings_info: string | null\n          status: string | null\n          street_duration: string | null\n          street_name: string | null\n          updated_at: string | null\n        }\n        Insert: {\n          address?: string | null\n          admission_date?: string | null\n          admission_type?: string | null\n          admission_type_details?: string | null\n          age?: number | null\n          client_id: string\n          contact?: string | null\n          created_at?: string | null\n          created_by?: string | null\n          date_of_birth?: string | null\n          education_level?: string | null\n          education_status?: string | null\n          family_composition?: string | null\n          father_contact?: string | null\n          father_location?: string | null\n          father_name?: string | null\n          father_occupation?: string | null\n          father_status?: string | null\n          gender?: string | null\n          guardian_contact?: string | null\n          guardian_location?: string | null\n          guardian_name?: string | null\n          guardian_occupation?: string | null\n          guardian_status?: string | null\n          id?: string\n          intake_number?: string | null\n          level_reached?: string | null\n          mother_contact?: string | null\n          mother_location?: string | null\n          mother_name?: string | null\n          mother_occupation?: string | null\n          mother_status?: string | null\n          name: string\n          nickname?: string | null\n          notes?: string | null\n          partner_contact?: string | null\n          partner_contact_person?: string | null\n          partner_name?: string | null\n          police_ob_number?: string | null\n          profile_picture?: string | null\n          rescue_details?: string | null\n          school_name?: string | null\n          siblings_info?: string | null\n          status?: string | null\n          street_duration?: string | null\n          street_name?: string | null\n          updated_at?: string | null\n        }\n        Update: {\n          address?: string | null\n          admission_date?: string | null\n          admission_type?: string | null\n          admission_type_details?: string | null\n          age?: number | null\n          client_id?: string\n          contact?: string | null\n          created_at?: string | null\n          created_by?: string | null\n          date_of_birth?: string | null\n          education_level?: string | null\n          education_status?: string | null\n          family_composition?: string | null\n          father_contact?: string | null\n          father_location?: string | null\n          father_name?: string | null\n          father_occupation?: string | null\n          father_status?: string | null\n          gender?: string | null\n          guardian_contact?: string | null\n          guardian_location?: string | null\n          guardian_name?: string | null\n          guardian_occupation?: string | null\n          guardian_status?: string | null\n          id?: string\n          intake_number?: string | null\n          level_reached?: string | null\n          mother_contact?: string | null\n          mother_location?: string | null\n          mother_name?: string | null\n          mother_occupation?: string | null\n          mother_status?: string | null\n          name?: string\n          nickname?: string | null\n          notes?: string | null\n          partner_contact?: string | null\n          partner_contact_person?: string | null\n          partner_name?: string | null\n          police_ob_number?: string | null\n          profile_picture?: string | null\n          rescue_details?: string | null\n          school_name?: string | null\n          siblings_info?: string | null\n          status?: string | null\n          street_duration?: string | null\n          street_name?: string | null\n          updated_at?: string | null\n        }\n        Relationships: []\n      }\n      exit_records: {\n        Row: {\n          aftercare_completion_date: string | null\n          aftercare_plan: string | null\n          client_id: string\n          client_signature_date: string | null\n          client_signature_name: string | null\n          counsellor_signature_date: string | null\n          counsellor_signature_name: string | null\n          created_at: string | null\n          created_by: string | null\n          discharge_remarks: string | null\n          exit_date: string\n          family_involvement: string | null\n          hors_signature_date: string | null\n          hors_signature_name: string | null\n          id: string\n          incomplete_reason: string | null\n          nature_of_discharge: string\n          reasons_for_treatment: string | null\n          receiving_adult_address: string | null\n          receiving_adult_id_number: string | null\n          receiving_adult_name: string | null\n          receiving_adult_position: string | null\n          receiving_adult_relationship: string | null\n          receiving_adult_relationship_other: string | null\n          receiving_adult_remarks: string | null\n          receiving_adult_signature_date: string | null\n          receiving_adult_signature_name: string | null\n          receiving_agency_contacts: string | null\n          receiving_agency_name: string | null\n          treatment_plan_problems: string | null\n          updated_at: string | null\n        }\n        Insert: {\n          aftercare_completion_date?: string | null\n          aftercare_plan?: string | null\n          client_id: string\n          client_signature_date?: string | null\n          client_signature_name?: string | null\n          counsellor_signature_date?: string | null\n          counsellor_signature_name?: string | null\n          created_at?: string | null\n          created_by?: string | null\n          discharge_remarks?: string | null\n          exit_date?: string\n          family_involvement?: string | null\n          hors_signature_date?: string | null\n          hors_signature_name?: string | null\n          id?: string\n          incomplete_reason?: string | null\n          nature_of_discharge: string\n          reasons_for_treatment?: string | null\n          receiving_adult_address?: string | null\n          receiving_adult_id_number?: string | null\n          receiving_adult_name?: string | null\n          receiving_adult_position?: string | null\n          receiving_adult_relationship?: string | null\n          receiving_adult_relationship_other?: string | null\n          receiving_adult_remarks?: string | null\n          receiving_adult_signature_date?: string | null\n          receiving_adult_signature_name?: string | null\n          receiving_agency_contacts?: string | null\n          receiving_agency_name?: string | null\n          treatment_plan_problems?: string | null\n          updated_at?: string | null\n        }\n        Update: {\n          aftercare_completion_date?: string | null\n          aftercare_plan?: string | null\n          client_id?: string\n          client_signature_date?: string | null\n          client_signature_name?: string | null\n          counsellor_signature_date?: string | null\n          counsellor_signature_name?: string | null\n          created_at?: string | null\n          created_by?: string | null\n          discharge_remarks?: string | null\n          exit_date?: string\n          family_involvement?: string | null\n          hors_signature_date?: string | null\n          hors_signature_name?: string | null\n          id?: string\n          incomplete_reason?: string | null\n          nature_of_discharge?: string\n          reasons_for_treatment?: string | null\n          receiving_adult_address?: string | null\n          receiving_adult_id_number?: string | null\n          receiving_adult_name?: string | null\n          receiving_adult_position?: string | null\n          receiving_adult_relationship?: string | null\n          receiving_adult_relationship_other?: string | null\n          receiving_adult_remarks?: string | null\n          receiving_adult_signature_date?: string | null\n          receiving_adult_signature_name?: string | null\n          receiving_agency_contacts?: string | null\n          receiving_agency_name?: string | null\n          treatment_plan_problems?: string | null\n          updated_at?: string | null\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"exit_records_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_admission_details\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"exit_records_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_disability_assessment\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"exit_records_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"clients\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      home_visits: {\n        Row: {\n          aftercare_followup_plan: string | null\n          assessment_report: string | null\n          caregiver_contacts: string | null\n          caregiver_relationship: string | null\n          caseworker_name: string | null\n          client_id: string\n          county: string | null\n          course_placement_plans: string | null\n          created_at: string | null\n          date_of_exit: string | null\n          disability_status: string | null\n          family_interventions: string | null\n          id: string\n          key_contacts: string | null\n          nature_of_reintegration: string | null\n          proposed_caregivers: string | null\n          reintegration_location: string | null\n          reintegration_plans: string | null\n          reintegration_recommendations: string | null\n          subcounty: string | null\n          updated_at: string | null\n          village: string | null\n          visit_date: string\n          visited_by: string | null\n        }\n        Insert: {\n          aftercare_followup_plan?: string | null\n          assessment_report?: string | null\n          caregiver_contacts?: string | null\n          caregiver_relationship?: string | null\n          caseworker_name?: string | null\n          client_id: string\n          county?: string | null\n          course_placement_plans?: string | null\n          created_at?: string | null\n          date_of_exit?: string | null\n          disability_status?: string | null\n          family_interventions?: string | null\n          id?: string\n          key_contacts?: string | null\n          nature_of_reintegration?: string | null\n          proposed_caregivers?: string | null\n          reintegration_location?: string | null\n          reintegration_plans?: string | null\n          reintegration_recommendations?: string | null\n          subcounty?: string | null\n          updated_at?: string | null\n          village?: string | null\n          visit_date: string\n          visited_by?: string | null\n        }\n        Update: {\n          aftercare_followup_plan?: string | null\n          assessment_report?: string | null\n          caregiver_contacts?: string | null\n          caregiver_relationship?: string | null\n          caseworker_name?: string | null\n          client_id?: string\n          county?: string | null\n          course_placement_plans?: string | null\n          created_at?: string | null\n          date_of_exit?: string | null\n          disability_status?: string | null\n          family_interventions?: string | null\n          id?: string\n          key_contacts?: string | null\n          nature_of_reintegration?: string | null\n          proposed_caregivers?: string | null\n          reintegration_location?: string | null\n          reintegration_plans?: string | null\n          reintegration_recommendations?: string | null\n          subcounty?: string | null\n          updated_at?: string | null\n          village?: string | null\n          visit_date?: string\n          visited_by?: string | null\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"home_visits_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_admission_details\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"home_visits_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_disability_assessment\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"home_visits_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"clients\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      marks: {\n        Row: {\n          client_id: string\n          created_at: string\n          created_by: string | null\n          grade: string | null\n          id: string\n          marks: number\n          remarks: string | null\n          subject_id: string\n          term: string\n          updated_at: string\n          year: number\n        }\n        Insert: {\n          client_id: string\n          created_at?: string\n          created_by?: string | null\n          grade?: string | null\n          id?: string\n          marks: number\n          remarks?: string | null\n          subject_id: string\n          term: string\n          updated_at?: string\n          year: number\n        }\n        Update: {\n          client_id?: string\n          created_at?: string\n          created_by?: string | null\n          grade?: string | null\n          id?: string\n          marks?: number\n          remarks?: string | null\n          subject_id?: string\n          term?: string\n          updated_at?: string\n          year?: number\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"marks_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_admission_details\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"marks_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_disability_assessment\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"marks_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"clients\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"marks_subject_id_fkey\"\n            columns: [\"subject_id\"]\n            isOneToOne: false\n            referencedRelation: \"subjects\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      medical_records: {\n        Row: {\n          client_id: string\n          created_at: string | null\n          created_by: string | null\n          diagnosis: string | null\n          doctor_name: string | null\n          follow_up_date: string | null\n          hospital_name: string\n          id: string\n          medications_prescribed: string | null\n          notes: string | null\n          reason_for_visit: string\n          treatment_given: string | null\n          updated_at: string | null\n          visit_date: string\n        }\n        Insert: {\n          client_id: string\n          created_at?: string | null\n          created_by?: string | null\n          diagnosis?: string | null\n          doctor_name?: string | null\n          follow_up_date?: string | null\n          hospital_name: string\n          id?: string\n          medications_prescribed?: string | null\n          notes?: string | null\n          reason_for_visit: string\n          treatment_given?: string | null\n          updated_at?: string | null\n          visit_date?: string\n        }\n        Update: {\n          client_id?: string\n          created_at?: string | null\n          created_by?: string | null\n          diagnosis?: string | null\n          doctor_name?: string | null\n          follow_up_date?: string | null\n          hospital_name?: string\n          id?: string\n          medications_prescribed?: string | null\n          notes?: string | null\n          reason_for_visit?: string\n          treatment_given?: string | null\n          updated_at?: string | null\n          visit_date?: string\n        }\n        Relationships: []\n      }\n      profiles: {\n        Row: {\n          created_at: string | null\n          full_name: string | null\n          id: string\n          updated_at: string | null\n          username: string\n        }\n        Insert: {\n          created_at?: string | null\n          full_name?: string | null\n          id: string\n          updated_at?: string | null\n          username: string\n        }\n        Update: {\n          created_at?: string | null\n          full_name?: string | null\n          id?: string\n          updated_at?: string | null\n          username?: string\n        }\n        Relationships: []\n      }\n      soap_notes: {\n        Row: {\n          areas_to_focus: string | null\n          assessment: string | null\n          client_id: string\n          counsellor_name: string\n          created_at: string | null\n          created_by: string | null\n          id: string\n          next_session_date: string | null\n          objective: string | null\n          plan: string | null\n          session_date: string\n          session_time: string | null\n          subjective: string | null\n          updated_at: string | null\n        }\n        Insert: {\n          areas_to_focus?: string | null\n          assessment?: string | null\n          client_id: string\n          counsellor_name: string\n          created_at?: string | null\n          created_by?: string | null\n          id?: string\n          next_session_date?: string | null\n          objective?: string | null\n          plan?: string | null\n          session_date?: string\n          session_time?: string | null\n          subjective?: string | null\n          updated_at?: string | null\n        }\n        Update: {\n          areas_to_focus?: string | null\n          assessment?: string | null\n          client_id?: string\n          counsellor_name?: string\n          created_at?: string | null\n          created_by?: string | null\n          id?: string\n          next_session_date?: string | null\n          objective?: string | null\n          plan?: string | null\n          session_date?: string\n          session_time?: string | null\n          subjective?: string | null\n          updated_at?: string | null\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"soap_notes_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_admission_details\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"soap_notes_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"client_disability_assessment\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"soap_notes_client_id_fkey\"\n            columns: [\"client_id\"]\n            isOneToOne: false\n            referencedRelation: \"clients\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      street_visits: {\n        Row: {\n          created_at: string | null\n          created_by: string | null\n          id: string\n          lat: number | null\n          lng: number | null\n          notes: string | null\n          staff: string\n          street_name: string\n          visit_date: string\n        }\n        Insert: {\n          created_at?: string | null\n          created_by?: string | null\n          id?: string\n          lat?: number | null\n          lng?: number | null\n          notes?: string | null\n          staff: string\n          street_name: string\n          visit_date: string\n        }\n        Update: {\n          created_at?: string | null\n          created_by?: string | null\n          id?: string\n          lat?: number | null\n          lng?: number | null\n          notes?: string | null\n          staff?: string\n          street_name?: string\n          visit_date?: string\n        }\n        Relationships: []\n      }\n      subjects: {\n        Row: {\n          code: string\n          created_at: string\n          created_by: string | null\n          description: string | null\n          id: string\n          name: string\n          updated_at: string\n        }\n        Insert: {\n          code: string\n          created_at?: string\n          created_by?: string | null\n          description?: string | null\n          id?: string\n          name: string\n          updated_at?: string\n        }\n        Update: {\n          code?: string\n          created_at?: string\n          created_by?: string | null\n          description?: string | null\n          id?: string\n          name?: string\n          updated_at?: string\n        }\n        Relationships: []\n      }\n      user_roles: {\n        Row: {\n          created_at: string | null\n          id: string\n          role: Database[\"public\"][\"Enums\"][\"app_role\"]\n          user_id: string\n        }\n        Insert: {\n          created_at?: string | null\n          id?: string\n          role: Database[\"public\"][\"Enums\"][\"app_role\"]\n          user_id: string\n        }\n        Update: {\n          created_at?: string | null\n          id?: string\n          role?: Database[\"public\"][\"Enums\"][\"app_role\"]\n          user_id?: string\n        }\n        Relationships: []\n      }\n    }\n    Views: {\n      client_admission_details: {\n        Row: {\n          admission_age: string | null\n          admission_date: string | null\n          admission_order_issued: string | null\n          client_id: string | null\n          committal_date: string | null\n          committal_order_no: string | null\n          current_care_placement_other: string | null\n          current_care_placement_type: Json | null\n          current_care_provider_name: string | null\n          current_care_provider_phone: string | null\n          current_care_provider_reg: string | null\n          history_of_placements_notes: string | null\n          history_placements_data: Json | null\n          id: string | null\n          name: string | null\n          other_admission_forms: Json | null\n          placement_order_no: string | null\n          pre_admission_living: string | null\n          reasons_for_admission_list: Json | null\n          reasons_for_admission_other: string | null\n          referrer_contact: string | null\n          referrer_location: string | null\n          referrer_name: string | null\n          referrer_relationship: string | null\n          referrer_title: string | null\n          vulnerability_location_separation: string | null\n          vulnerability_location_street: string | null\n          vulnerability_other: string | null\n          vulnerability_type: Json | null\n        }\n        Insert: {\n          admission_age?: never\n          admission_date?: string | null\n          admission_order_issued?: never\n          client_id?: string | null\n          committal_date?: never\n          committal_order_no?: never\n          current_care_placement_other?: never\n          current_care_placement_type?: never\n          current_care_provider_name?: never\n          current_care_provider_phone?: never\n          current_care_provider_reg?: never\n          history_of_placements_notes?: never\n          history_placements_data?: never\n          id?: string | null\n          name?: string | null\n          other_admission_forms?: never\n          placement_order_no?: never\n          pre_admission_living?: never\n          reasons_for_admission_list?: never\n          reasons_for_admission_other?: never\n          referrer_contact?: never\n          referrer_location?: never\n          referrer_name?: never\n          referrer_relationship?: never\n          referrer_title?: never\n          vulnerability_location_separation?: never\n          vulnerability_location_street?: never\n          vulnerability_other?: never\n          vulnerability_type?: never\n        }\n        Update: {\n          admission_age?: never\n          admission_date?: string | null\n          admission_order_issued?: never\n          client_id?: string | null\n          committal_date?: never\n          committal_order_no?: never\n          current_care_placement_other?: never\n          current_care_placement_type?: never\n          current_care_provider_name?: never\n          current_care_provider_phone?: never\n          current_care_provider_reg?: never\n          history_of_placements_notes?: never\n          history_placements_data?: never\n          id?: string | null\n          name?: string | null\n          other_admission_forms?: never\n          placement_order_no?: never\n          pre_admission_living?: never\n          reasons_for_admission_list?: never\n          reasons_for_admission_other?: never\n          referrer_contact?: never\n          referrer_location?: never\n          referrer_name?: never\n          referrer_relationship?: never\n          referrer_title?: never\n          vulnerability_location_separation?: never\n          vulnerability_location_street?: never\n          vulnerability_other?: never\n          vulnerability_type?: never\n        }\n        Relationships: []\n      }\n      client_disability_assessment: {\n        Row: {\n          admission_date: string | null\n          age: number | null\n          birth_registered: string | null\n          birth_registration_number: string | null\n          client_id: string | null\n          cognitive_details: string | null\n          cognitive_difficulty: string | null\n          communication_details: string | null\n          communication_difficulty: string | null\n          gender: string | null\n          has_disability: boolean | null\n          hearing_details: string | null\n          hearing_difficulty: string | null\n          id: string | null\n          mobility_details: string | null\n          mobility_difficulty: string | null\n          name: string | null\n          selfcare_details: string | null\n          selfcare_difficulty: string | null\n          status: string | null\n          vision_details: string | null\n          vision_difficulty: string | null\n        }\n        Insert: {\n          admission_date?: string | null\n          age?: number | null\n          birth_registered?: never\n          birth_registration_number?: never\n          client_id?: string | null\n          cognitive_details?: never\n          cognitive_difficulty?: never\n          communication_details?: never\n          communication_difficulty?: never\n          gender?: string | null\n          has_disability?: never\n          hearing_details?: never\n          hearing_difficulty?: never\n          id?: string | null\n          mobility_details?: never\n          mobility_difficulty?: never\n          name?: string | null\n          selfcare_details?: never\n          selfcare_difficulty?: never\n          status?: string | null\n          vision_details?: never\n          vision_difficulty?: never\n        }\n        Update: {\n          admission_date?: string | null\n          age?: number | null\n          birth_registered?: never\n          birth_registration_number?: never\n          client_id?: string | null\n          cognitive_details?: never\n          cognitive_difficulty?: never\n          communication_details?: never\n          communication_difficulty?: never\n          gender?: string | null\n          has_disability?: never\n          hearing_details?: never\n          hearing_difficulty?: never\n          id?: string | null\n          mobility_details?: never\n          mobility_difficulty?: never\n          name?: string | null\n          selfcare_details?: never\n          selfcare_difficulty?: never\n          status?: string | null\n          vision_details?: never\n          vision_difficulty?: never\n        }\n        Relationships: []\n      }\n    }\n    Functions: {\n      has_role: {\n        Args: {\n          _role: Database[\"public\"][\"Enums\"][\"app_role\"]\n          _user_id: string\n        }\n        Returns: boolean\n      }\n    }\n    Enums: {\n      app_role:\n        | \"admin\"\n        | \"social_work\"\n        | \"education\"\n        | \"counselling\"\n        | \"empowerment\"\n        | \"housekeeping\"\n        | \"finance\"\n        | \"agriculture\"\n    }\n    CompositeTypes: {\n      [_ in never]: never\n    }\n  }\n}\n\ntype DatabaseWithoutInternals = Omit<Database, \"__InternalSupabase\">\n\ntype DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, \"public\">]\n\nexport type Tables<\n  DefaultSchemaTableNameOrOptions extends\n    | keyof (DefaultSchema[\"Tables\"] & DefaultSchema[\"Views\"])\n    | { schema: keyof DatabaseWithoutInternals },\n  TableName extends DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"] &\n        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Views\"])\n    : never = never,\n> = DefaultSchemaTableNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"] &\n      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Views\"])[TableName] extends {\n      Row: infer R\n    }\n    ? R\n    : never\n  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema[\"Tables\"] &\n        DefaultSchema[\"Views\"])\n    ? (DefaultSchema[\"Tables\"] &\n        DefaultSchema[\"Views\"])[DefaultSchemaTableNameOrOptions] extends {\n        Row: infer R\n      }\n      ? R\n      : never\n    : never\n\nexport type TablesInsert<\n  DefaultSchemaTableNameOrOptions extends\n    | keyof DefaultSchema[\"Tables\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  TableName extends DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"]\n    : never = never,\n> = DefaultSchemaTableNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"][TableName] extends {\n      Insert: infer I\n    }\n    ? I\n    : never\n  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema[\"Tables\"]\n    ? DefaultSchema[\"Tables\"][DefaultSchemaTableNameOrOptions] extends {\n        Insert: infer I\n      }\n      ? I\n      : never\n    : never\n\nexport type TablesUpdate<\n  DefaultSchemaTableNameOrOptions extends\n    | keyof DefaultSchema[\"Tables\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  TableName extends DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"]\n    : never = never,\n> = DefaultSchemaTableNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"][TableName] extends {\n      Update: infer U\n    }\n    ? U\n    : never\n  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema[\"Tables\"]\n    ? DefaultSchema[\"Tables\"][DefaultSchemaTableNameOrOptions] extends {\n        Update: infer U\n      }\n      ? U\n      : never\n    : never\n\nexport type Enums<\n  DefaultSchemaEnumNameOrOptions extends\n    | keyof DefaultSchema[\"Enums\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  EnumName extends DefaultSchemaEnumNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions[\"schema\"]][\"Enums\"]\n    : never = never,\n> = DefaultSchemaEnumNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions[\"schema\"]][\"Enums\"][EnumName]\n  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema[\"Enums\"]\n    ? DefaultSchema[\"Enums\"][DefaultSchemaEnumNameOrOptions]\n    : never\n\nexport type CompositeTypes<\n  PublicCompositeTypeNameOrOptions extends\n    | keyof DefaultSchema[\"CompositeTypes\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions[\"schema\"]][\"CompositeTypes\"]\n    : never = never,\n> = PublicCompositeTypeNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions[\"schema\"]][\"CompositeTypes\"][CompositeTypeName]\n  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema[\"CompositeTypes\"]\n    ? DefaultSchema[\"CompositeTypes\"][PublicCompositeTypeNameOrOptions]\n    : never\n\nexport const Constants = {\n  public: {\n    Enums: {\n      app_role: [\n        \"admin\",\n        \"social_work\",\n        \"education\",\n        \"counselling\",\n        \"empowerment\",\n        \"housekeeping\",\n        \"finance\",\n        \"agriculture\",\n      ],\n    },\n  },\n} as const\n"}
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
+  public: {
+    Tables: {
+      aftercare_records: {
+        Row: {
+          client_id: string
+          completion_date: string | null
+          completion_status: string
+          contact_person: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          institution_workshop: string
+          notes: string | null
+          placement_course: string | null
+          placement_date: string | null
+          placement_fees: number | null
+          placement_location: string | null
+          placement_type: string | null
+          placement_type_details: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          completion_date?: string | null
+          completion_status?: string
+          contact_person?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          institution_workshop: string
+          notes?: string | null
+          placement_course?: string | null
+          placement_date?: string | null
+          placement_fees?: number | null
+          placement_location?: string | null
+          placement_type?: string | null
+          placement_type_details?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          completion_date?: string | null
+          completion_status?: string
+          contact_person?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          institution_workshop?: string
+          notes?: string | null
+          placement_course?: string | null
+          placement_date?: string | null
+          placement_fees?: number | null
+          placement_location?: string | null
+          placement_type?: string | null
+          placement_type_details?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aftercare_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_admission_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aftercare_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_disability_assessment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aftercare_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      case_plans: {
+        Row: {
+          case_manager_date: string | null
+          case_manager_name: string | null
+          case_manager_signature: string | null
+          caseworker_date: string | null
+          caseworker_name: string | null
+          caseworker_signature: string | null
+          client_id: string
+          created_at: string | null
+          economic_entries: Json | null
+          economic_goals: string | null
+          education_entries: Json | null
+          education_goals: string | null
+          health_entries: Json | null
+          health_goals: string | null
+          id: string
+          plan_date: string | null
+          protection_entries: Json | null
+          protection_goals: string | null
+          psychosocial_entries: Json | null
+          psychosocial_goals: string | null
+          relationship_entries: Json | null
+          relationship_goals: string | null
+          saved_sections: string[] | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          case_manager_date?: string | null
+          case_manager_name?: string | null
+          case_manager_signature?: string | null
+          caseworker_date?: string | null
+          caseworker_name?: string | null
+          caseworker_signature?: string | null
+          client_id: string
+          created_at?: string | null
+          economic_entries?: Json | null
+          economic_goals?: string | null
+          education_entries?: Json | null
+          education_goals?: string | null
+          health_entries?: Json | null
+          health_goals?: string | null
+          id?: string
+          plan_date?: string | null
+          protection_entries?: Json | null
+          protection_goals?: string | null
+          psychosocial_entries?: Json | null
+          psychosocial_goals?: string | null
+          relationship_entries?: Json | null
+          relationship_goals?: string | null
+          saved_sections?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          case_manager_date?: string | null
+          case_manager_name?: string | null
+          case_manager_signature?: string | null
+          caseworker_date?: string | null
+          caseworker_name?: string | null
+          caseworker_signature?: string | null
+          client_id?: string
+          created_at?: string | null
+          economic_entries?: Json | null
+          economic_goals?: string | null
+          education_entries?: Json | null
+          education_goals?: string | null
+          health_entries?: Json | null
+          health_goals?: string | null
+          id?: string
+          plan_date?: string | null
+          protection_entries?: Json | null
+          protection_goals?: string | null
+          psychosocial_entries?: Json | null
+          psychosocial_goals?: string | null
+          relationship_entries?: Json | null
+          relationship_goals?: string | null
+          saved_sections?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_admission_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_disability_assessment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      clients: {
+        Row: {
+          address: string | null
+          admission_date: string | null
+          admission_type: string | null
+          admission_type_details: string | null
+          age: number | null
+          client_id: string
+          contact: string | null
+          created_at: string | null
+          created_by: string | null
+          date_of_birth: string | null
+          education_level: string | null
+          education_status: string | null
+          family_composition: string | null
+          father_contact: string | null
+          father_location: string | null
+          father_name: string | null
+          father_occupation: string | null
+          father_status: string | null
+          gender: string | null
+          guardian_contact: string | null
+          guardian_location: string | null
+          guardian_name: string | null
+          guardian_occupation: string | null
+          guardian_status: string | null
+          id: string
+          intake_number: string | null
+          level_reached: string | null
+          mother_contact: string | null
+          mother_location: string | null
+          mother_name: string | null
+          mother_occupation: string | null
+          mother_status: string | null
+          name: string
+          nickname: string | null
+          notes: string | null
+          partner_contact: string | null
+          partner_contact_person: string | null
+          partner_name: string | null
+          police_ob_number: string | null
+          profile_picture: string | null
+          rescue_details: string | null
+          school_name: string | null
+          siblings_info: string | null
+          status: string | null
+          street_duration: string | null
+          street_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          admission_date?: string | null
+          admission_type?: string | null
+          admission_type_details?: string | null
+          age?: number | null
+          client_id: string
+          contact?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_of_birth?: string | null
+          education_level?: string | null
+          education_status?: string | null
+          family_composition?: string | null
+          father_contact?: string | null
+          father_location?: string | null
+          father_name?: string | null
+          father_occupation?: string | null
+          father_status?: string | null
+          gender?: string | null
+          guardian_contact?: string | null
+          guardian_location?: string | null
+          guardian_name?: string | null
+          guardian_occupation?: string | null
+          guardian_status?: string | null
+          id?: string
+          intake_number?: string | null
+          level_reached?: string | null
+          mother_contact?: string | null
+          mother_location?: string | null
+          mother_name?: string | null
+          mother_occupation?: string | null
+          mother_status?: string | null
+          name: string
+          nickname?: string | null
+          notes?: string | null
+          partner_contact?: string | null
+          partner_contact_person?: string | null
+          partner_name?: string | null
+          police_ob_number?: string | null
+          profile_picture?: string | null
+          rescue_details?: string | null
+          school_name?: string | null
+          siblings_info?: string | null
+          status?: string | null
+          street_duration?: string | null
+          street_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          admission_date?: string | null
+          admission_type?: string | null
+          admission_type_details?: string | null
+          age?: number | null
+          client_id?: string
+          contact?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_of_birth?: string | null
+          education_level?: string | null
+          education_status?: string | null
+          family_composition?: string | null
+          father_contact?: string | null
+          father_location?: string | null
+          father_name?: string | null
+          father_occupation?: string | null
+          father_status?: string | null
+          gender?: string | null
+          guardian_contact?: string | null
+          guardian_location?: string | null
+          guardian_name?: string | null
+          guardian_occupation?: string | null
+          guardian_status?: string | null
+          id?: string
+          intake_number?: string | null
+          level_reached?: string | null
+          mother_contact?: string | null
+          mother_location?: string | null
+          mother_name?: string | null
+          mother_occupation?: string | null
+          mother_status?: string | null
+          name?: string
+          nickname?: string | null
+          notes?: string | null
+          partner_contact?: string | null
+          partner_contact_person?: string | null
+          partner_name?: string | null
+          police_ob_number?: string | null
+          profile_picture?: string | null
+          rescue_details?: string | null
+          school_name?: string | null
+          siblings_info?: string | null
+          status?: string | null
+          street_duration?: string | null
+          street_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      exit_records: {
+        Row: {
+          aftercare_completion_date: string | null
+          aftercare_plan: string | null
+          client_id: string
+          client_signature_date: string | null
+          client_signature_name: string | null
+          counsellor_signature_date: string | null
+          counsellor_signature_name: string | null
+          created_at: string | null
+          created_by: string | null
+          discharge_remarks: string | null
+          exit_date: string
+          family_involvement: string | null
+          hors_signature_date: string | null
+          hors_signature_name: string | null
+          id: string
+          incomplete_reason: string | null
+          nature_of_discharge: string
+          reasons_for_treatment: string | null
+          receiving_adult_address: string | null
+          receiving_adult_id_number: string | null
+          receiving_adult_name: string | null
+          receiving_adult_position: string | null
+          receiving_adult_relationship: string | null
+          receiving_adult_relationship_other: string | null
+          receiving_adult_remarks: string | null
+          receiving_adult_signature_date: string | null
+          receiving_adult_signature_name: string | null
+          receiving_agency_contacts: string | null
+          receiving_agency_name: string | null
+          treatment_plan_problems: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          aftercare_completion_date?: string | null
+          aftercare_plan?: string | null
+          client_id: string
+          client_signature_date?: string | null
+          client_signature_name?: string | null
+          counsellor_signature_date?: string | null
+          counsellor_signature_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          discharge_remarks?: string | null
+          exit_date?: string
+          family_involvement?: string | null
+          hors_signature_date?: string | null
+          hors_signature_name?: string | null
+          id?: string
+          incomplete_reason?: string | null
+          nature_of_discharge: string
+          reasons_for_treatment?: string | null
+          receiving_adult_address?: string | null
+          receiving_adult_id_number?: string | null
+          receiving_adult_name?: string | null
+          receiving_adult_position?: string | null
+          receiving_adult_relationship?: string | null
+          receiving_adult_relationship_other?: string | null
+          receiving_adult_remarks?: string | null
+          receiving_adult_signature_date?: string | null
+          receiving_adult_signature_name?: string | null
+          receiving_agency_contacts?: string | null
+          receiving_agency_name?: string | null
+          treatment_plan_problems?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          aftercare_completion_date?: string | null
+          aftercare_plan?: string | null
+          client_id?: string
+          client_signature_date?: string | null
+          client_signature_name?: string | null
+          counsellor_signature_date?: string | null
+          counsellor_signature_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          discharge_remarks?: string | null
+          exit_date?: string
+          family_involvement?: string | null
+          hors_signature_date?: string | null
+          hors_signature_name?: string | null
+          id?: string
+          incomplete_reason?: string | null
+          nature_of_discharge?: string
+          reasons_for_treatment?: string | null
+          receiving_adult_address?: string | null
+          receiving_adult_id_number?: string | null
+          receiving_adult_name?: string | null
+          receiving_adult_position?: string | null
+          receiving_adult_relationship?: string | null
+          receiving_adult_relationship_other?: string | null
+          receiving_adult_remarks?: string | null
+          receiving_adult_signature_date?: string | null
+          receiving_adult_signature_name?: string | null
+          receiving_agency_contacts?: string | null
+          receiving_agency_name?: string | null
+          treatment_plan_problems?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exit_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_admission_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exit_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_disability_assessment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exit_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      home_visits: {
+        Row: {
+          aftercare_followup_plan: string | null
+          assessment_report: string | null
+          caregiver_contacts: string | null
+          caregiver_relationship: string | null
+          caseworker_name: string | null
+          client_id: string
+          county: string | null
+          course_placement_plans: string | null
+          created_at: string | null
+          date_of_exit: string | null
+          disability_status: string | null
+          family_interventions: string | null
+          id: string
+          key_contacts: string | null
+          nature_of_reintegration: string | null
+          proposed_caregivers: string | null
+          reintegration_location: string | null
+          reintegration_plans: string | null
+          reintegration_recommendations: string | null
+          subcounty: string | null
+          updated_at: string | null
+          village: string | null
+          visit_date: string
+          visited_by: string | null
+        }
+        Insert: {
+          aftercare_followup_plan?: string | null
+          assessment_report?: string | null
+          caregiver_contacts?: string | null
+          caregiver_relationship?: string | null
+          caseworker_name?: string | null
+          client_id: string
+          county?: string | null
+          course_placement_plans?: string | null
+          created_at?: string | null
+          date_of_exit?: string | null
+          disability_status?: string | null
+          family_interventions?: string | null
+          id?: string
+          key_contacts?: string | null
+          nature_of_reintegration?: string | null
+          proposed_caregivers?: string | null
+          reintegration_location?: string | null
+          reintegration_plans?: string | null
+          reintegration_recommendations?: string | null
+          subcounty?: string | null
+          updated_at?: string | null
+          village?: string | null
+          visit_date: string
+          visited_by?: string | null
+        }
+        Update: {
+          aftercare_followup_plan?: string | null
+          assessment_report?: string | null
+          caregiver_contacts?: string | null
+          caregiver_relationship?: string | null
+          caseworker_name?: string | null
+          client_id?: string
+          county?: string | null
+          course_placement_plans?: string | null
+          created_at?: string | null
+          date_of_exit?: string | null
+          disability_status?: string | null
+          family_interventions?: string | null
+          id?: string
+          key_contacts?: string | null
+          nature_of_reintegration?: string | null
+          proposed_caregivers?: string | null
+          reintegration_location?: string | null
+          reintegration_plans?: string | null
+          reintegration_recommendations?: string | null
+          subcounty?: string | null
+          updated_at?: string | null
+          village?: string | null
+          visit_date?: string
+          visited_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_visits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_admission_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_visits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_disability_assessment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_visits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      marks: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          grade: string | null
+          id: string
+          marks: number
+          remarks: string | null
+          subject_id: string
+          term: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          grade?: string | null
+          id?: string
+          marks: number
+          remarks?: string | null
+          subject_id: string
+          term: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          grade?: string | null
+          id?: string
+          marks?: number
+          remarks?: string | null
+          subject_id?: string
+          term?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_admission_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_disability_assessment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      medical_records: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          diagnosis: string | null
+          doctor_name: string | null
+          follow_up_date: string | null
+          hospital_name: string
+          id: string
+          medications_prescribed: string | null
+          notes: string | null
+          reason_for_visit: string
+          treatment_given: string | null
+          updated_at: string | null
+          visit_date: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          diagnosis?: string | null
+          doctor_name?: string | null
+          follow_up_date?: string | null
+          hospital_name: string
+          id?: string
+          medications_prescribed?: string | null
+          notes?: string | null
+          reason_for_visit: string
+          treatment_given?: string | null
+          updated_at?: string | null
+          visit_date?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          diagnosis?: string | null
+          doctor_name?: string | null
+          follow_up_date?: string | null
+          hospital_name?: string
+          id?: string
+          medications_prescribed?: string | null
+          notes?: string | null
+          reason_for_visit?: string
+          treatment_given?: string | null
+          updated_at?: string | null
+          visit_date?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
+      soap_notes: {
+        Row: {
+          areas_to_focus: string | null
+          assessment: string | null
+          client_id: string
+          counsellor_name: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          next_session_date: string | null
+          objective: string | null
+          plan: string | null
+          session_date: string
+          session_time: string | null
+          subjective: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          areas_to_focus?: string | null
+          assessment?: string | null
+          client_id: string
+          counsellor_name: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          next_session_date?: string | null
+          objective?: string | null
+          plan?: string | null
+          session_date?: string
+          session_time?: string | null
+          subjective?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          areas_to_focus?: string | null
+          assessment?: string | null
+          client_id?: string
+          counsellor_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          next_session_date?: string | null
+          objective?: string | null
+          plan?: string | null
+          session_date?: string
+          session_time?: string | null
+          subjective?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "soap_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_admission_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "soap_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_disability_assessment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "soap_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      street_visits: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          staff: string
+          street_name: string
+          visit_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          staff: string
+          street_name: string
+          visit_date: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          staff?: string
+          street_name?: string
+          visit_date?: string
+        }
+        Relationships: []
+      }
+      subjects: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      client_admission_details: {
+        Row: {
+          admission_age: string | null
+          admission_date: string | null
+          admission_order_issued: string | null
+          client_id: string | null
+          committal_date: string | null
+          committal_order_no: string | null
+          current_care_placement_other: string | null
+          current_care_placement_type: Json | null
+          current_care_provider_name: string | null
+          current_care_provider_phone: string | null
+          current_care_provider_reg: string | null
+          history_of_placements_notes: string | null
+          history_placements_data: Json | null
+          id: string | null
+          name: string | null
+          other_admission_forms: Json | null
+          placement_order_no: string | null
+          pre_admission_living: string | null
+          reasons_for_admission_list: Json | null
+          reasons_for_admission_other: string | null
+          referrer_contact: string | null
+          referrer_location: string | null
+          referrer_name: string | null
+          referrer_relationship: string | null
+          referrer_title: string | null
+          vulnerability_location_separation: string | null
+          vulnerability_location_street: string | null
+          vulnerability_other: string | null
+          vulnerability_type: Json | null
+        }
+        Insert: {
+          admission_age?: never
+          admission_date?: string | null
+          admission_order_issued?: never
+          client_id?: string | null
+          committal_date?: never
+          committal_order_no?: never
+          current_care_placement_other?: never
+          current_care_placement_type?: never
+          current_care_provider_name?: never
+          current_care_provider_phone?: never
+          current_care_provider_reg?: never
+          history_of_placements_notes?: never
+          history_placements_data?: never
+          id?: string | null
+          name?: string | null
+          other_admission_forms?: never
+          placement_order_no?: never
+          pre_admission_living?: never
+          reasons_for_admission_list?: never
+          reasons_for_admission_other?: never
+          referrer_contact?: never
+          referrer_location?: never
+          referrer_name?: never
+          referrer_relationship?: never
+          referrer_title?: never
+          vulnerability_location_separation?: never
+          vulnerability_location_street?: never
+          vulnerability_other?: never
+          vulnerability_type?: never
+        }
+        Update: {
+          admission_age?: never
+          admission_date?: string | null
+          admission_order_issued?: never
+          client_id?: string | null
+          committal_date?: never
+          committal_order_no?: never
+          current_care_placement_other?: never
+          current_care_placement_type?: never
+          current_care_provider_name?: never
+          current_care_provider_phone?: never
+          current_care_provider_reg?: never
+          history_of_placements_notes?: never
+          history_placements_data?: never
+          id?: string | null
+          name?: string | null
+          other_admission_forms?: never
+          placement_order_no?: never
+          pre_admission_living?: never
+          reasons_for_admission_list?: never
+          reasons_for_admission_other?: never
+          referrer_contact?: never
+          referrer_location?: never
+          referrer_name?: never
+          referrer_relationship?: never
+          referrer_title?: never
+          vulnerability_location_separation?: never
+          vulnerability_location_street?: never
+          vulnerability_other?: never
+          vulnerability_type?: never
+        }
+        Relationships: []
+      }
+      client_disability_assessment: {
+        Row: {
+          admission_date: string | null
+          age: number | null
+          birth_registered: string | null
+          birth_registration_number: string | null
+          client_id: string | null
+          cognitive_details: string | null
+          cognitive_difficulty: string | null
+          communication_details: string | null
+          communication_difficulty: string | null
+          gender: string | null
+          has_disability: boolean | null
+          hearing_details: string | null
+          hearing_difficulty: string | null
+          id: string | null
+          mobility_details: string | null
+          mobility_difficulty: string | null
+          name: string | null
+          selfcare_details: string | null
+          selfcare_difficulty: string | null
+          status: string | null
+          vision_details: string | null
+          vision_difficulty: string | null
+        }
+        Insert: {
+          admission_date?: string | null
+          age?: number | null
+          birth_registered?: never
+          birth_registration_number?: never
+          client_id?: string | null
+          cognitive_details?: never
+          cognitive_difficulty?: never
+          communication_details?: never
+          communication_difficulty?: never
+          gender?: string | null
+          has_disability?: never
+          hearing_details?: never
+          hearing_difficulty?: never
+          id?: string | null
+          mobility_details?: never
+          mobility_difficulty?: never
+          name?: string | null
+          selfcare_details?: never
+          selfcare_difficulty?: never
+          status?: string | null
+          vision_details?: never
+          vision_difficulty?: never
+        }
+        Update: {
+          admission_date?: string | null
+          age?: number | null
+          birth_registered?: never
+          birth_registration_number?: never
+          client_id?: string | null
+          cognitive_details?: never
+          cognitive_difficulty?: never
+          communication_details?: never
+          communication_difficulty?: never
+          gender?: string | null
+          has_disability?: never
+          hearing_details?: never
+          hearing_difficulty?: never
+          id?: string | null
+          mobility_details?: never
+          mobility_difficulty?: never
+          name?: string | null
+          selfcare_details?: never
+          selfcare_difficulty?: never
+          status?: string | null
+          vision_details?: never
+          vision_difficulty?: never
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+    }
+    Enums: {
+      app_role:
+        | "admin"
+        | "social_work"
+        | "education"
+        | "counselling"
+        | "empowerment"
+        | "housekeeping"
+        | "finance"
+        | "agriculture"
+        | "aftercare"
+        | "alumni"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+      DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      app_role: [
+        "admin",
+        "social_work",
+        "education",
+        "counselling",
+        "empowerment",
+        "housekeeping",
+        "finance",
+        "agriculture",
+        "aftercare",
+        "alumni"
+      ]
+    }
+  }
+} as const

@@ -203,6 +203,21 @@ export default function ManageUsers() {
 
         setSubmitting(true);
         try {
+            // Check if username is already taken to prevent database trigger unique constraint violation
+            const { data: existingProfile, error: profileCheckError } = await supabase
+                .from("profiles")
+                .select("id")
+                .eq("username", formData.username)
+                .maybeSingle();
+
+            if (profileCheckError) throw profileCheckError;
+
+            if (existingProfile) {
+                toast.error("Username is already taken. Please choose a different one.");
+                setSubmitting(false);
+                return;
+            }
+
             // Create a secondary client so we don't overwrite the admin's session
             const secondarySupabase = createClient(
                 import.meta.env.VITE_SUPABASE_URL,
