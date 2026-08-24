@@ -41,6 +41,7 @@ const CasePlans = () => {
  const { data, error } = await supabase
  .from('clients')
  .select('*')
+ .ilike('status', 'active')
  .order('name');
 
  if (error) throw error;
@@ -233,7 +234,7 @@ const CasePlans = () => {
  <CardTitle>Create New Case Plan</CardTitle>
  </div>
  <p className="text-sm text-muted-foreground mt-1">
- Select a client to create a new case plan (Form 4)
+ Select a client to create a new case plan (Form 4) &mdash; only active clients are shown
  </p>
  </CardHeader>
  <CardContent className="space-y-4">
@@ -247,11 +248,17 @@ const CasePlans = () => {
  <SelectValue placeholder="Choose a client..." />
  </SelectTrigger>
  <SelectContent className="bg-card z-50">
- {clients.map((client) => (
+ {clients.length === 0 ? (
+ <SelectItem value="none" disabled>
+ No active clients found
+ </SelectItem>
+ ) : (
+ clients.map((client) => (
  <SelectItem key={client.id} value={client.id}>
  {client.name} ({client.client_id})
  </SelectItem>
- ))}
+ ))
+ )}
  </SelectContent>
  </Select>
  </div>
