@@ -44,11 +44,11 @@ export const AdmissionsExitsChart = ({ data, loading }: AdmissionsExitsChartProp
           </div>
           <div className="hidden sm:flex items-center gap-4 text-xs font-medium text-slate-400">
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-green-600" />
+              <span className="w-2.5 h-2.5 rounded-sm bg-indigo-600" />
               Admissions
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-red-500" />
+              <span className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
               Exits
             </div>
           </div>
@@ -81,8 +81,8 @@ export const AdmissionsExitsChart = ({ data, loading }: AdmissionsExitsChartProp
                   allowDecimals={false}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(148,163,184,0.06)", radius: 4 }} />
-                <Bar dataKey="admissions" name="Admissions" fill="#16a34a" radius={[5, 5, 0, 0]} maxBarSize={36} />
-                <Bar dataKey="exits" name="Exits" fill="#dc2626" radius={[5, 5, 0, 0]} maxBarSize={36} />
+                <Bar dataKey="admissions" name="Admissions" fill="#4f46e5" radius={[5, 5, 0, 0]} maxBarSize={36} />
+                <Bar dataKey="exits" name="Exits" fill="#f59e0b" radius={[5, 5, 0, 0]} maxBarSize={36} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

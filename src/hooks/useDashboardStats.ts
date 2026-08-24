@@ -12,6 +12,7 @@ export interface DashboardStats {
   totalMedicalRecords: number;
   admissions: number;
   exits: number;
+  activePlacements: number;
   
   // Chart Data
   systemActivityData: { date: string; visits: number; sessions: number; medical: number }[];
@@ -115,6 +116,7 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
         const totalMedicalRecords = filteredMedical.length;
         const admissions = filteredClients.length;
         const exits = filteredExits.length;
+        const activePlacements = allAftercare.filter(r => r.completion_status?.toLowerCase() === 'in progress').length;
 
         // --- Prepare Chart Data ---
 
@@ -236,6 +238,7 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           totalMedicalRecords,
           admissions,
           exits,
+          activePlacements,
           systemActivityData: displayActivityData,
           demographicsData,
           clientStatusData,

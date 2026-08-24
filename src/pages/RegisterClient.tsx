@@ -6,7 +6,8 @@ import * as z from "zod";
 import {
   User, Calendar, Cake, Users, Hash, Shield, UserCircle, UserCircle2,
   FileText, Activity, AlertTriangle, Baby, MapPin, Phone, School,
-  Brain, Heart, Save, CheckSquare, ArrowRight, ArrowLeft, Plus, Trash2
+  Brain, Heart, Save, CheckSquare, ArrowRight, ArrowLeft, Plus, Trash2,
+  Search, ChevronDown, X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -258,6 +259,18 @@ const RegisterClient = () => {
   const [deleteOtherRelativeIndex, setDeleteOtherRelativeIndex] = useState<number | null>(null);
   const { user } = useAuth();
 
+  // Client selector state
+  const [allClients, setAllClients] = useState<Array<{
+    id: string; name: string; intake_number: string | null; client_id: string;
+    date_of_birth: string | null; age: number | null; gender: string | null;
+    police_ob_number: string | null; admission_date: string | null;
+    education_level: string | null; street_name: string | null;
+    street_duration: string | null; profile_picture: string | null;
+  }>>([]);
+  const [clientSearch, setClientSearch] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [selectedClientSummary, setSelectedClientSummary] = useState<any>(null);
+
   const isAllowed = ["admin", "social_work", "education", "counselling", "empowerment"].includes(user?.role || "");
 
   useEffect(() => {
@@ -391,15 +404,49 @@ const RegisterClient = () => {
   });
 
   useEffect(() => {
-    if (activeClientId) fetchClientData();
+    fetchAllClients();
+    if (activeClientId) fetchClientData(activeClientId);
   }, [activeClientId]);
 
-  const fetchClientData = async () => {
+  const fetchAllClients = async () => {
+    try {
+      const { data, error } = await supabase.from('clients').select(`
+        id, name, intake_number, client_id, date_of_birth, age, gender,
+        police_ob_number, admission_date, education_level, street_name,
+        street_duration, profile_picture, status
+      `).order('created_at', { ascending: false });
+      if (error) throw error;
+      
+      // Only show clients who have not graduated
+      const activeClients = (data || []).filter(c => 
+        !['Graduated', 'Alumni', 'Alumni - Placed', 'Alumni - Awaiting Placement', 'Complete'].includes(c.status || '')
+      );
+      
+      setAllClients(activeClients);
+    } catch (error) {
+      console.error("Error fetching clients list:", error);
+    }
+  };
+
+  const handleSelectClient = (clientId: string) => {
+    setActiveClientId(clientId);
+    setShowClientDropdown(false);
+    setClientSearch("");
+    
+    // Update URL
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('clientId', clientId);
+    newUrl.searchParams.set('mode', 'edit');
+    window.history.replaceState({}, '', newUrl.toString());
+  };
+
+  const fetchClientData = async (clientId: string = activeClientId as string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('clients').select('*').eq('id', activeClientId).single();
+      const { data, error } = await supabase.from('clients').select('*').eq('id', clientId).single();
       if (error) throw error;
       if (data) {
+        setSelectedClientSummary(data);
         const extraData = safeJsonParse(data.notes);
         const assessmentFields = extraData.assessmentData || {};
         const realNotes = extraData.notes ?? "";
@@ -638,7 +685,94 @@ const RegisterClient = () => {
               variant: "destructive"
             });
           })} className="space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            {/* Client Selector */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border mb-6 relative z-20">
+              <div className="flex flex-col space-y-4">
+                <Label className="text-lg font-semibold text-primary flex items-center gap-2">
+                  <Search className="h-5 w-5" /> Select Client for Assessment
+                </Label>
+                <div className="relative">
+                  <div 
+                    className="flex items-center justify-between border rounded-md p-3 cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => setShowClientDropdown(!showClientDropdown)}
+                  >
+                    <span className={activeClientId ? "text-foreground font-medium" : "text-muted-foreground"}>
+                      {activeClientId && selectedClientSummary 
+                        ? `${selectedClientSummary.name} (${selectedClientSummary.intake_number || selectedClientSummary.client_id})` 
+                        : ""}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showClientDropdown ? "rotate-180" : ""}`} />
+                  </div>
+                  
+                  {showClientDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto z-50">
+                      <div className="p-2 sticky top-0 bg-white border-b">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder=""
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            className="pl-8"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <div className="p-1">
+                        {allClients
+                          .filter(c => 
+                            c.name.toLowerCase().includes(clientSearch.toLowerCase()) || 
+                            (c.intake_number || c.client_id || "").toLowerCase().includes(clientSearch.toLowerCase())
+                          )
+                          .map(client => (
+                            <div 
+                              key={client.id}
+                              className="p-3 hover:bg-muted cursor-pointer rounded-sm flex flex-col"
+                              onClick={() => handleSelectClient(client.id)}
+                            >
+                              <span className="font-medium">{client.name}</span>
+                              <span className="text-xs text-muted-foreground">ID: {client.intake_number || client.client_id} | Admitted: {client.admission_date ? new Date(client.admission_date).toLocaleDateString() : 'N/A'}</span>
+                            </div>
+                          ))}
+                        {allClients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.intake_number || c.client_id || "").toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
+                          <div className="p-3 text-sm text-muted-foreground text-center">No clients found</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Read-Only Admission Summary Card */}
+            {activeClientId && selectedClientSummary && (
+              <Card className="mb-6 bg-slate-50/50 border-primary/20 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+                <CardHeader className="pb-3 border-b bg-white/50">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <UserCircle className="h-5 w-5 text-primary" /> Admission Summary
+                    </CardTitle>
+                    <a href={`/admission?clientId=${activeClientId}&mode=edit`} className="text-xs text-primary hover:underline font-medium">Edit Admission Data</a>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Full Name</span><span className="font-medium">{selectedClientSummary.name}</span></div>
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Date of Birth / Age</span><span className="font-medium">{selectedClientSummary.date_of_birth ? new Date(selectedClientSummary.date_of_birth).toLocaleDateString() : 'N/A'} ({selectedClientSummary.age ? `${selectedClientSummary.age} yrs` : 'N/A'})</span></div>
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Gender</span><span className="font-medium">{selectedClientSummary.gender || 'N/A'}</span></div>
+                  
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Client/Intake ID</span><span className="font-medium">{selectedClientSummary.intake_number || selectedClientSummary.client_id || 'N/A'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Police OB No.</span><span className="font-medium">{selectedClientSummary.police_ob_number || 'N/A'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Admission Date</span><span className="font-medium">{selectedClientSummary.admission_date ? new Date(selectedClientSummary.admission_date).toLocaleDateString() : 'N/A'}</span></div>
+                  
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Education Level</span><span className="font-medium">{selectedClientSummary.education_level || 'N/A'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Base/Partner</span><span className="font-medium">{selectedClientSummary.street_name || 'N/A'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Duration on Street</span><span className="font-medium">{selectedClientSummary.street_duration || 'N/A'}</span></div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className={`w-full ${!activeClientId ? 'opacity-50 pointer-events-none' : ''}`}>
               <TabsList className="grid w-full grid-cols-5 h-auto p-1 bg-muted rounded-lg gap-1">
                 <TabsTrigger value="bio" className="h-full whitespace-normal px-1 py-1 text-[10px] sm:text-sm leading-tight flex items-center justify-center text-center">Biographical</TabsTrigger>
                 <TabsTrigger value="admission" className="h-full whitespace-normal px-1 py-1 text-[10px] sm:text-sm leading-tight flex items-center justify-center text-center">Admission</TabsTrigger>
@@ -650,29 +784,9 @@ const RegisterClient = () => {
               <TabsContent value="bio" className="space-y-4 pt-4">
                 <Card><CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Biographical Information</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <FormField control={form.control} name="firstName" render={({ field }) => (
-                        <FormItem><FormLabel>First Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="secondName" render={({ field }) => (
-                        <FormItem><FormLabel>Second Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
-                        <FormItem><FormLabel>Date of Birth</FormLabel><FormControl><Input type="date" {...field} onChange={(e) => { field.onChange(e); form.setValue("calculatedAge", calculateAge(e.target.value)); }} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="calculatedAge" render={({ field }) => (
-                        <FormItem><FormLabel>Age</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" /></FormControl></FormItem>
-                      )} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <FormField control={form.control} name="gender" render={({ field }) => (
-                        <FormItem><FormLabel>Gender</FormLabel><Select onValueChange={field.onChange} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Male">Male</SelectItem><SelectItem value="Female">Female</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-                      )} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="nickname" render={({ field }) => (
                         <FormItem><FormLabel>Nickname</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                      )} />
-                      <FormField control={form.control} name="intakeNumber" render={({ field }) => (
-                        <FormItem><FormLabel>Client/Intake ID *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="profilePicture" render={() => (
                         <FormItem><FormLabel>Profile Picture</FormLabel><FormControl><div className="flex items-center gap-4">{profilePreview && <img src={profilePreview} alt="Preview" className="h-16 w-16 rounded-full object-cover" />}<Input type="file" accept="image/*" onChange={handleFileChange} /></div></FormControl></FormItem>
@@ -788,17 +902,7 @@ const RegisterClient = () => {
               <TabsContent value="admission" className="space-y-4 pt-4">
                 <Card><CardHeader><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Admission Details</CardTitle></CardHeader>
                   <CardContent className="space-y-6">
-                    {/* Basic Admission Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField control={form.control} name="admissionDate" render={({ field }) => (
-                        <FormItem><FormLabel>Date of Admission</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="admissionAge" render={({ field }) => (
-                        <FormItem><FormLabel>Age at Admission</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                      )} />
-                    </div>
 
-                    <Separator />
 
 
                     {/* Other Forms of Admission */}

@@ -1,4 +1,4 @@
-import { Home, Users, UserPlus, Heart, MapPin, GraduationCap, MessageCircle, Lightbulb, Settings, Medal, LogOut, ClipboardList } from "lucide-react";
+import { Home, Users, UserPlus, Heart, MapPin, GraduationCap, MessageCircle, Lightbulb, Settings, Medal, LogOut, ClipboardList, FileText } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -20,7 +20,8 @@ import { Button } from "@/components/ui/button";
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: Home, roles: ["admin", "social_work", "education", "counselling", "empowerment", "aftercare", "alumni"] },
   { title: "All Clients", url: "/clients", icon: Users, roles: ["admin", "social_work", "education", "counselling", "empowerment"] },
-  { title: "Register Client", url: "/register", icon: UserPlus, roles: ["admin", "social_work", "counselling"] },
+  { title: "Client Assessment", url: "/register", icon: UserPlus, roles: ["admin", "social_work", "counselling"] },
+  { title: "Admission Form", url: "/admission", icon: FileText, roles: ["admin", "social_work", "counselling"] },
   { title: "Case Plans", url: "/case-plans", icon: ClipboardList, roles: ["admin", "social_work"] },
   { title: "Aftercare", url: "/aftercare", icon: Heart, roles: ["admin", "social_work", "aftercare"] },
   { title: "Reintegration Plans", url: "/reintegration-plans", icon: MapPin, roles: ["admin", "social_work", "education", "counselling", "empowerment"] },

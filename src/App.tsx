@@ -27,6 +27,7 @@ import NotFound from "./pages/NotFound";
 import CasePlans from "./pages/CasePlans";
 import AddCasePlan from "./pages/AddCasePlan";
 import CasePlanDetails from "./pages/CasePlanDetails";
+import AdmissionForm from "./pages/AdmissionForm";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
                             <Route path="/empowerment" element={<Empowerment />} />
                             <Route path="/users" element={<ManageUsers />} />
                             <Route path="/alumni" element={<Alumni />} />
+                            <Route path="/admission" element={<AdmissionForm />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
                         </div>

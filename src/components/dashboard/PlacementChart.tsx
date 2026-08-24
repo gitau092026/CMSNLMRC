@@ -14,7 +14,9 @@ interface PlacementChartProps {
   loading?: boolean;
 }
 
-const PALETTE = ["#16a34a", "#ca8a04", "#ea580c", "#dc2626", "#15803d"];
+const PALETTE = [
+  "#14b8a6", "#3b82f6", "#f59e0b", "#8b5cf6", "#64748b", "#e11d48"
+];
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {

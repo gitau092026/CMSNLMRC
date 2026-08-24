@@ -9,11 +9,11 @@ interface DemographicsChartProps {
 }
 
 const PALETTE = [
-  "#16a34a", // green
-  "#ca8a04", // gold
-  "#ea580c", // orange
-  "#dc2626", // red
-  "#15803d", // dark green
+  "#3b82f6", // blue
+  "#8b5cf6", // violet
+  "#14b8a6", // teal
+  "#f59e0b", // amber
+  "#64748b", // slate
 ];
 
 const CustomTooltip = ({ active, payload }: any) => {

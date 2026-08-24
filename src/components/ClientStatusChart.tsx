@@ -15,9 +15,9 @@ interface ClientStatusChartProps {
 }
 
 const PALETTE = [
-  "#16a34a", "#ca8a04", "#ea580c", "#dc2626",
-  "#15803d", "#b45309", "#c2410c", "#b91c1c",
-  "#4ade80", "#fbbf24",
+  "#3b82f6", "#14b8a6", "#f59e0b", "#8b5cf6",
+  "#64748b", "#e11d48", "#0ea5e9", "#10b981",
+  "#f43f5e", "#d946ef",
 ];
 
 const CustomTooltip = ({ active, payload }: any) => {

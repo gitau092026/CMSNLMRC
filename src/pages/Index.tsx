@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Home, Calendar, TrendingUp, Medal, Activity, ArrowUpRight, ChevronDown } from "lucide-react";
+import { Users, Home, Calendar, TrendingUp, Medal, Activity, ArrowUpRight, ChevronDown, Briefcase } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDashboardStats, DateRangeFilter } from "@/hooks/useDashboardStats";
 
@@ -24,34 +24,34 @@ const Index = () => {
 
   const kpiCards = [
     {
-      label: "Total Clients",
+      label: "Total Beneficiaries",
       value: stats?.totalClients ?? 0,
-      sub: `${stats?.activeClients ?? 0} active`,
+      sub: `${stats?.activeClients ?? 0} active cases`,
       icon: Users,
-      accent: "from-green-500 to-emerald-600",
+      accent: "text-indigo-600 bg-indigo-50 border-indigo-100",
     },
     {
-      label: "Home Visits",
+      label: "Field Interventions",
       value: stats?.totalHomeVisits ?? 0,
-      sub: "This period",
+      sub: "Home visits this period",
       icon: Home,
-      accent: "from-yellow-400 to-amber-500",
+      accent: "text-amber-600 bg-amber-50 border-amber-100",
     },
     {
-      label: "Alumni",
+      label: "Successful Reintegrations",
       value: (stats?.clientStatusData?.filter(s =>
         ["Alumni - Placed", "Alumni - Awaiting Placement", "Alumni", "Complete", "Graduated"].includes(s.name)
       ).reduce((sum, s) => sum + s.value, 0)) ?? 0,
       sub: "Graduates",
       icon: Medal,
-      accent: "from-orange-500 to-orange-600",
+      accent: "text-emerald-600 bg-emerald-50 border-emerald-100",
     },
     {
-      label: "Admissions",
-      value: stats?.admissions ?? 0,
-      sub: "This period",
-      icon: TrendingUp,
-      accent: "from-red-500 to-rose-600",
+      label: "Placement Progress",
+      value: stats?.activePlacements ?? 0,
+      sub: "Active in-progress placements",
+      icon: Briefcase,
+      accent: "text-cyan-600 bg-cyan-50 border-cyan-100",
     },
   ];
 
@@ -66,7 +66,7 @@ const Index = () => {
               <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">System Overview</h1>
+              <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">Monitoring & Evaluation Hub</h1>
               <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:block">Analytics & decision-making metrics</p>
             </div>
           </div>
@@ -104,30 +104,26 @@ const Index = () => {
           {kpiCards.map((card) => (
             <div
               key={card.label}
-              className={`bg-gradient-to-br ${card.accent} rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 sm:hover:-translate-y-0.5 p-4 sm:p-5 flex flex-col gap-2 sm:gap-3 group relative overflow-hidden`}
+              className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex flex-col gap-2 sm:gap-3 relative overflow-hidden"
             >
-              {/* Background decoration */}
-              <div className="absolute -top-4 -right-4 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10" />
-              <div className="absolute -bottom-5 -left-5 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/5" />
-
               <div className="relative flex items-start justify-between">
-                <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-sm">
-                  <card.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                <div className={`p-2 rounded-lg sm:rounded-xl border ${card.accent}`}>
+                  <card.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/40 group-hover:text-white/70 transition-colors" />
+                <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-300" />
               </div>
 
-              <div className="relative">
+              <div className="relative mt-2">
                 {loading ? (
                   <div className="space-y-1.5">
-                    <div className="h-6 sm:h-8 w-12 sm:w-16 bg-white/20 rounded-lg animate-pulse" />
-                    <div className="h-2.5 w-16 sm:w-24 bg-white/10 rounded animate-pulse" />
+                    <div className="h-6 sm:h-8 w-12 sm:w-16 bg-slate-100 rounded-lg animate-pulse" />
+                    <div className="h-2.5 w-16 sm:w-24 bg-slate-50 rounded animate-pulse" />
                   </div>
                 ) : (
                   <>
-                    <p className="text-2xl sm:text-3xl font-extrabold text-white leading-none tracking-tight">{card.value}</p>
-                    <p className="text-[10px] sm:text-xs text-white/70 font-semibold mt-1 sm:mt-1.5 uppercase tracking-wide">{card.label}</p>
-                    <p className="text-[9px] sm:text-[11px] text-white/60 mt-0.5 hidden sm:block">{card.sub}</p>
+                    <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-none tracking-tight">{card.value}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-semibold mt-1.5 uppercase tracking-wide">{card.label}</p>
+                    <p className="text-[9px] sm:text-[11px] text-slate-400 mt-0.5 hidden sm:block">{card.sub}</p>
                   </>
                 )}
               </div>
@@ -138,7 +134,7 @@ const Index = () => {
         {/* Section: Trends */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Trends</span>
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Impact Metrics</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
           {/* Stack on mobile, side-by-side on desktop */}
@@ -155,7 +151,7 @@ const Index = () => {
         {/* Section: Distribution */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Distribution</span>
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Program Outcomes</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
           {/* 1 col mobile, 2 col tablet, 3 col desktop */}
