@@ -674,7 +674,7 @@ const ClientDetails = () => {
 
             // ---- Assessment Conclusion ----
             const conclusionData: any[] = [
-                ...(assessmentData.assessmentStatus ? [['Assessment Status', assessmentData.assessmentStatus]] : []),
+                [['Assessment Status', client.status === 'Active' && assessmentData.assessmentStatus !== 'Approved' ? 'In Progress' : (assessmentData.assessmentStatus || "Pending")]],
                 ...(assessmentData.reintegrationPreference ? [['Child\'s Preference', assessmentData.reintegrationPreference]] : []),
                 ...(assessmentData.reintegrationPreferenceStatus ? [['Preference Status', assessmentData.reintegrationPreferenceStatus]] : []),
                 ...(assessmentData.reintegrationConcerns ? [['Reintegration Concerns', assessmentData.reintegrationConcerns]] : []),
@@ -1750,7 +1750,9 @@ const ClientDetails = () => {
                                             <div className="space-y-1">
                                                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assessment Status</span>
                                                 <div>
-                                                    <Badge className="font-medium" variant={assessmentData.assessmentStatus === 'Approved' ? 'default' : 'secondary'}>{assessmentData.assessmentStatus || "Pending"}</Badge>
+                                                    <Badge className="font-medium" variant={assessmentData.assessmentStatus === 'Approved' ? 'default' : 'secondary'}>
+                                                        {client.status === 'Active' && assessmentData.assessmentStatus !== 'Approved' ? 'In Progress' : (assessmentData.assessmentStatus || "Pending")}
+                                                    </Badge>
                                                 </div>
                                             </div>
                                         </div>
