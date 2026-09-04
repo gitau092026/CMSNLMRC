@@ -148,7 +148,8 @@ const safeJsonParse = (input: any) => {
                 assessmentData: parsed.assessmentData || {}
             };
         }
-        return { notes: "", assessmentData: null };
+        // Fallback: If it's a structured object from Admission Form, treat it as assessmentData
+        return { notes: "", assessmentData: parsed };
     }
 
     return { notes: String(input), assessmentData: null };
@@ -253,6 +254,28 @@ const ClientDetails = () => {
         }
     };
 
+    const formatSiblingsInfo = (info: string | undefined | null) => {
+        if (!info) return '';
+        try {
+            const parsed = JSON.parse(info);
+            if (Array.isArray(parsed)) {
+                return parsed.map((s: any) => {
+                    const parts = [];
+                    if (s.name) parts.push(s.name);
+                    const details = [];
+                    if (s.age) details.push(`${s.age}y`);
+                    if (s.sex) details.push(s.sex);
+                    if (details.length > 0) parts.push(`(${details.join(', ')})`);
+                    if (s.schoolStatus) parts.push(`- ${s.schoolStatus}`);
+                    return parts.join(' ');
+                }).join('; ');
+            }
+            return info;
+        } catch {
+            return info;
+        }
+    };
+
     const handleExportPDF = async () => {
         if (!client) return;
         
@@ -295,13 +318,49 @@ const ClientDetails = () => {
 
         const addSectionTable = (title: string, data: any[]) => {
            if (data.length === 0) return;
+           
+           const formattedBody: any[] = [];
+           let currentRow: any[] = [];
+           
+           data.forEach((row) => {
+               const label = row[0];
+               const val = cleanVal(row[1]);
+               const isLong = val.length > 65 || val.includes('\n');
+               
+               if (isLong) {
+                   if (currentRow.length > 0) {
+                       currentRow.push('', '');
+                       formattedBody.push(currentRow);
+                       currentRow = [];
+                   }
+                   formattedBody.push([
+                       { content: label, styles: { fontStyle: 'bold' } }, 
+                       { content: val, colSpan: 3 }
+                   ]);
+               } else {
+                   currentRow.push({ content: label, styles: { fontStyle: 'bold' } }, val);
+                   if (currentRow.length === 4) {
+                       formattedBody.push(currentRow);
+                       currentRow = [];
+                   }
+               }
+           });
+           
+           if (currentRow.length > 0) {
+               currentRow.push('', '');
+               formattedBody.push(currentRow);
+           }
+           
            autoTable(doc, {
                startY: finalY + 10,
-               head: [[title, '']],
-               body: data.map(row => [row[0], cleanVal(row[1])]),
+               head: [[{ content: title, colSpan: 4, styles: { halign: 'left' } }]],
+               body: formattedBody,
                theme: 'grid',
                headStyles: { fillColor: [63, 81, 181] },
-               columnStyles: { 0: { cellWidth: 70 } },
+               columnStyles: { 
+                   0: { cellWidth: 40, fillColor: [240, 244, 248] }, 
+                   2: { cellWidth: 40, fillColor: [240, 244, 248] } 
+               },
            });
            finalY = (doc as any).lastAutoTable.finalY;
         };
@@ -321,34 +380,32 @@ const ClientDetails = () => {
         let finalY = startY + 12;
 
         // ---- Basic Info ----
-        autoTable(doc, {
-            startY: finalY,
-            head: [['Basic Information', '']],
-            body: [
-                ['Name', client.name],
-                ['Client ID', client.client_id],
-                ['Status', client.status],
-                ['Age', `${client.age} years`],
-                ['Gender', client.gender],
-                ['Date of Birth', client.date_of_birth ? new Date(client.date_of_birth).toLocaleDateString() : 'N/A'],
-                ...(client.nickname ? [['Nickname', client.nickname]] : []),
-                ...(client.intake_number ? [['Intake Number', client.intake_number]] : []),
-                ...(client.police_ob_number ? [['Police OB Number', client.police_ob_number]] : []),
-                ['Date Entered', new Date(client.admission_date).toLocaleDateString()],
-                ...(assessmentData?.religion ? [['Religion', assessmentData.religion]] : []),
-                ...(assessmentData?.ethnicity ? [['Ethnicity', assessmentData.ethnicity]] : []),
-            ],
-            theme: 'grid',
-            headStyles: { fillColor: [63, 81, 181] },
-            columnStyles: { 0: { cellWidth: 70 } },
-        });
-        finalY = (doc as any).lastAutoTable.finalY;
+        const basicInfoData = [
+            ['Name', client.name],
+            ['Client ID', client.client_id],
+            ['Status', client.status],
+            ['Age', `${client.age} years`],
+            ['Gender', client.gender],
+            ['Date of Birth', client.date_of_birth ? new Date(client.date_of_birth).toLocaleDateString() : 'N/A'],
+            ...(client.nickname ? [['Nickname', client.nickname]] : []),
+            ...(client.intake_number ? [['Intake Number', client.intake_number]] : []),
+            ...(client.police_ob_number ? [['Police OB Number', client.police_ob_number]] : []),
+            ['Admission Date', new Date(client.admission_date).toLocaleDateString()],
+            ...(assessmentData?.religion ? [['Religion', assessmentData.religion]] : []),
+            ...(assessmentData?.ethnicity ? [['Ethnicity', assessmentData.ethnicity]] : []),
+            ...(assessmentData?.ethnicCommunity ? [['Ethnic Community', assessmentData.ethnicCommunity]] : []),
+            ...(assessmentData?.healthCondition ? [['Health Condition', assessmentData.healthCondition]] : []),
+            ...(assessmentData?.hobbies ? [['Hobbies', assessmentData.hobbies]] : []),
+            ...(assessmentData?.drugsAbused ? [['Drugs Abused', assessmentData.drugsAbused]] : []),
+        ];
+        addSectionTable('Basic Information', basicInfoData);
 
         // ---- Extended Biographical Details ----
         const bioData: any[] = [
             ...(assessmentData?.admissionAge ? [['Admission Age', assessmentData.admissionAge]] : []),
             ...(assessmentData?.birthRegistered ? [['Birth Registered', assessmentData.birthRegistered]] : []),
             ...(assessmentData?.birthRegistrationNumber ? [['Birth Reg No.', assessmentData.birthRegistrationNumber]] : []),
+            ...(assessmentData?.placeOfBirth ? [['Place of Birth', assessmentData.placeOfBirth]] : []),
             ...(assessmentData?.placeOfBirthCounty ? [['Place of Birth (County)', assessmentData.placeOfBirthCounty]] : []),
             ...(assessmentData?.placeOfBirthSubCounty ? [['Place of Birth (Sub-County)', assessmentData.placeOfBirthSubCounty]] : []),
             ...(assessmentData?.placeOfBirthVillage ? [['Place of Birth (Village)', assessmentData.placeOfBirthVillage]] : []),
@@ -399,6 +456,24 @@ const ClientDetails = () => {
         ];
         addSectionTable('Pre-Admission & Vulnerability', preAdmData);
 
+        // ---- Residential & Home Details (From Admission Form) ----
+        if (assessmentData?.homeDetails || assessmentData?.residentialDetails) {
+            const homeData: any[] = [];
+            if (assessmentData.homeDetails) {
+                if (assessmentData.homeDetails.county) homeData.push(['Home County', assessmentData.homeDetails.county]);
+                if (assessmentData.homeDetails.subCounty) homeData.push(['Home Sub-County', assessmentData.homeDetails.subCounty]);
+                if (assessmentData.homeDetails.location) homeData.push(['Home Location', assessmentData.homeDetails.location]);
+                if (assessmentData.homeDetails.subLocation) homeData.push(['Home Sub-Location', assessmentData.homeDetails.subLocation]);
+                if (assessmentData.homeDetails.village) homeData.push(['Home Village', assessmentData.homeDetails.village]);
+                if (assessmentData.homeDetails.address) homeData.push(['Home Address', assessmentData.homeDetails.address]);
+            }
+            if (assessmentData.residentialDetails) {
+                if (assessmentData.residentialDetails.placeBeforeStreet) homeData.push(['Place Lived Before Street', assessmentData.residentialDetails.placeBeforeStreet]);
+                if (assessmentData.residentialDetails.reasonForStreet) homeData.push(['Reason for Street Life', assessmentData.residentialDetails.reasonForStreet]);
+            }
+            addSectionTable('Home / Rural Particulars & Residential Details', homeData);
+        }
+
         // ---- Education Information ----
         const eduData: any[] = [
             ...(client.education_level ? [['Education Level', client.education_level]] : []),
@@ -416,6 +491,17 @@ const ClientDetails = () => {
             ...(assessmentData?.educationPreviousMode ? [['Previous Mode', assessmentData.educationPreviousMode]] : []),
             ...(assessmentData?.educationPreviousNameLocation ? [['Previous Name & Location', assessmentData.educationPreviousNameLocation]] : []),
         ];
+        
+        if (assessmentData?.schoolInfo) {
+            if (assessmentData.schoolInfo.typeOfSchool) eduData.push(['Type of School', assessmentData.schoolInfo.typeOfSchool]);
+            if (assessmentData.schoolInfo.schoolLocation) eduData.push(['School Location', assessmentData.schoolInfo.schoolLocation]);
+            if (assessmentData.schoolInfo.classForm) eduData.push(['Class/Form', assessmentData.schoolInfo.classForm]);
+            if (assessmentData.schoolInfo.likedSchool) eduData.push(['Liked School', assessmentData.schoolInfo.likedSchool]);
+            if (assessmentData.schoolInfo.favoriteSubject) eduData.push(['Favorite Subject', assessmentData.schoolInfo.favoriteSubject]);
+            if (assessmentData.schoolInfo.skillPrior) eduData.push(['Skill/Trade Prior', assessmentData.schoolInfo.skillPrior]);
+            if (assessmentData.schoolInfo.interestBackToSchool) eduData.push(['Interest to go back to school', assessmentData.schoolInfo.interestBackToSchool]);
+        }
+        
         addSectionTable('Education Information', eduData);
 
         // ---- Referral & Admission History ----
@@ -441,7 +527,6 @@ const ClientDetails = () => {
         // ---- Family Information ----
         const familyData: any[] = [
             ...(client.family_composition ? [['Family Composition', client.family_composition]] : []),
-            ...(client.siblings_info ? [['Siblings Info', client.siblings_info]] : []),
             ...(assessmentData?.parentsLivingTogether ? [['Parents Living Together', assessmentData.parentsLivingTogether]] : []),
             ...(assessmentData?.contactWithFamily ? [['Contact With Family', assessmentData.contactWithFamily]] : []),
             ...(assessmentData?.contactWithFamilyWhom ? [['Contact With Whom', assessmentData.contactWithFamilyWhom]] : []),
@@ -461,6 +546,18 @@ const ClientDetails = () => {
             ...(client.guardian_occupation ? [['Guardian Occupation', client.guardian_occupation]] : []),
             ...(client.guardian_contact ? [['Guardian Contact', client.guardian_contact]] : []),
             ...(client.guardian_location ? [['Guardian Location', client.guardian_location]] : []),
+            
+            // Extended details from notes payload
+            ...(assessmentData?.parentsMaritalStatus ? [['Parents Marital Status', assessmentData.parentsMaritalStatus]] : []),
+            ...(assessmentData?.fatherDetails?.type ? [['Father Type', assessmentData.fatherDetails.type]] : []),
+            ...(assessmentData?.fatherDetails?.religion ? [['Father Religion', assessmentData.fatherDetails.religion]] : []),
+            ...(assessmentData?.fatherDetails?.ethnicCommunity ? [['Father Ethnicity', assessmentData.fatherDetails.ethnicCommunity]] : []),
+            ...(assessmentData?.motherDetails?.type ? [['Mother Type', assessmentData.motherDetails.type]] : []),
+            ...(assessmentData?.motherDetails?.religion ? [['Mother Religion', assessmentData.motherDetails.religion]] : []),
+            ...(assessmentData?.motherDetails?.ethnicCommunity ? [['Mother Ethnicity', assessmentData.motherDetails.ethnicCommunity]] : []),
+            ...(assessmentData?.guardianDetails?.type ? [['Guardian Type', assessmentData.guardianDetails.type === 'Other' ? assessmentData.guardianDetails.typeOther : assessmentData.guardianDetails.type]] : []),
+            ...(assessmentData?.guardianDetails?.ethnicCommunity ? [['Guardian Ethnicity', assessmentData.guardianDetails.ethnicCommunity]] : []),
+            
             ...(assessmentData?.familyEconomicStatus ? [['Family Economic Status', assessmentData.familyEconomicStatus]] : []),
             ...(assessmentData?.peopleLivingWithChild ? [['People Living With Child', assessmentData.peopleLivingWithChild]] : []),
         ];
@@ -474,7 +571,26 @@ const ClientDetails = () => {
         addSectionTable('Family Information', familyData);
 
         // Siblings table
-        if (assessmentData?.siblingsList && assessmentData.siblingsList.length > 0) {
+        if (client.siblings_info) {
+            try {
+                const parsed = JSON.parse(client.siblings_info);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    const sibRows = parsed.map((s: any) => [
+                        s.name || '-', 
+                        s.sex || '-', 
+                        s.age || '-', 
+                        s.schoolStatus || '-'
+                    ]);
+                    addWideTable('Siblings', ['Name', 'Sex', 'Age', 'Status/School'], sibRows);
+                } else if (typeof client.siblings_info === 'string' && client.siblings_info.trim() !== '') {
+                    addSectionTable('Siblings', [['Details', client.siblings_info]]);
+                }
+            } catch (e) {
+                if (client.siblings_info.trim() !== '') {
+                    addSectionTable('Siblings', [['Details', client.siblings_info]]);
+                }
+            }
+        } else if (assessmentData?.siblingsList && assessmentData.siblingsList.length > 0) {
             const sibRows = assessmentData.siblingsList.map((s: any) => [
                 s.name + (s.nickname ? ` (${s.nickname})` : ''),
                 s.age || '',
@@ -578,6 +694,24 @@ const ClientDetails = () => {
         // ---- General Notes ----
         if (actualNotes && !actualNotes.trim().startsWith('{')) {
             addSectionTable('Additional / General Notes', [['Notes', actualNotes]]);
+        }
+        
+        // ---- Official Signatures ----
+        if (assessmentData?.officialSignatures) {
+            const signatureData: any[] = [];
+            if (assessmentData.officialSignatures.socialWorker?.name) {
+                signatureData.push(['Social Worker Name', assessmentData.officialSignatures.socialWorker.name]);
+                signatureData.push(['Social Worker Sign Date', assessmentData.officialSignatures.socialWorker.date || 'N/A']);
+            }
+            if (assessmentData.officialSignatures.headOfRehab?.name) {
+                signatureData.push(['Head of Rehab Name', assessmentData.officialSignatures.headOfRehab.name]);
+                signatureData.push(['Head of Rehab Sign Date', assessmentData.officialSignatures.headOfRehab.date || 'N/A']);
+            }
+            if (assessmentData.officialSignatures.director?.name) {
+                signatureData.push(['Director Name', assessmentData.officialSignatures.director.name]);
+                signatureData.push(['Director Sign Date', assessmentData.officialSignatures.director.date || 'N/A']);
+            }
+            addSectionTable('For Official Use Only (Signatures)', signatureData);
         }
 
         // ---- Aftercare & Placement Records ----
@@ -756,7 +890,11 @@ const ClientDetails = () => {
                             {client.police_ob_number && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Police OB Number</span><p className="text-sm font-medium text-foreground">{client.police_ob_number}</p></div>}
                             {assessmentData?.religion && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Religion</span><p className="text-sm font-medium text-foreground">{assessmentData.religion}</p></div>}
                             {assessmentData?.ethnicity && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ethnicity</span><p className="text-sm font-medium text-foreground">{assessmentData.ethnicity}</p></div>}
-                            <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date Entered</span><p className="text-sm font-medium text-foreground">{new Date(client.admission_date).toLocaleDateString()}</p></div>
+                            {assessmentData?.ethnicCommunity && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ethnic Community</span><p className="text-sm font-medium text-foreground">{assessmentData.ethnicCommunity}</p></div>}
+                            {assessmentData?.healthCondition && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Health Condition</span><p className="text-sm font-medium text-foreground">{assessmentData.healthCondition}</p></div>}
+                            {assessmentData?.hobbies && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hobbies</span><p className="text-sm font-medium text-foreground">{assessmentData.hobbies}</p></div>}
+                            {assessmentData?.drugsAbused && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Drugs Abused</span><p className="text-sm font-medium text-foreground">{assessmentData.drugsAbused}</p></div>}
+                            <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admission Date</span><p className="text-sm font-medium text-foreground">{new Date(client.admission_date).toLocaleDateString()}</p></div>
                         </div>
                     </CardContent>
                 </Card>
@@ -783,6 +921,8 @@ const ClientDetails = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                     {assessmentData.birthRegistered && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Birth Registered</span><p className="text-sm font-medium text-foreground">{assessmentData.birthRegistered}</p></div>}
                                     {assessmentData.birthRegistrationNumber && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Birth Registration No.</span><p className="text-sm font-medium text-foreground">{assessmentData.birthRegistrationNumber}</p></div>}
+                                    {assessmentData.placeOfBirth && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Place of Birth</span><p className="text-sm font-medium text-foreground">{assessmentData.placeOfBirth}</p></div>}
+                                    {assessmentData.birthRegistrationNumber && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Birth Registration No.</span><p className="text-sm font-medium text-foreground">{assessmentData.birthRegistrationNumber}</p></div>}
                                     {assessmentData.placeOfBirthCounty && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Place of Birth (County)</span><p className="text-sm font-medium text-foreground">{assessmentData.placeOfBirthCounty}</p></div>}
                                     {assessmentData.placeOfBirthSubCounty && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Place of Birth (Sub-County)</span><p className="text-sm font-medium text-foreground">{assessmentData.placeOfBirthSubCounty}</p></div>}
                                     {assessmentData.placeOfBirthVillage && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Place of Birth (Village)</span><p className="text-sm font-medium text-foreground">{assessmentData.placeOfBirthVillage}</p></div>}
@@ -797,6 +937,30 @@ const ClientDetails = () => {
                         </Card>
                     )}
 
+                {/* Home / Rural Particulars & Residential Details */}
+                {(assessmentData?.homeDetails || assessmentData?.residentialDetails) && (
+                    <Card className="border-secondary/20 shadow-sm hover:shadow-md transition-shadow duration-200 mb-6">
+                        <CardHeader className="py-3 px-4 border-b border-secondary/20 bg-secondary/10">
+                            <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
+                                <Home className="h-5 w-5 text-secondary" />
+                                Home / Rural Particulars & Residential Details
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                {assessmentData?.homeDetails?.county && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Home County</span><p className="text-sm font-medium text-foreground">{assessmentData.homeDetails.county}</p></div>}
+                                {assessmentData?.homeDetails?.subCounty && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Home Sub-County</span><p className="text-sm font-medium text-foreground">{assessmentData.homeDetails.subCounty}</p></div>}
+                                {assessmentData?.homeDetails?.location && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Home Location</span><p className="text-sm font-medium text-foreground">{assessmentData.homeDetails.location}</p></div>}
+                                {assessmentData?.homeDetails?.subLocation && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Home Sub-Location</span><p className="text-sm font-medium text-foreground">{assessmentData.homeDetails.subLocation}</p></div>}
+                                {assessmentData?.homeDetails?.village && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Home Village</span><p className="text-sm font-medium text-foreground">{assessmentData.homeDetails.village}</p></div>}
+                                {assessmentData?.homeDetails?.address && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Home Address</span><p className="text-sm font-medium text-foreground">{assessmentData.homeDetails.address}</p></div>}
+                                
+                                {assessmentData?.residentialDetails?.placeBeforeStreet && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Place Lived Before Street</span><p className="text-sm font-medium text-foreground">{assessmentData.residentialDetails.placeBeforeStreet}</p></div>}
+                                {assessmentData?.residentialDetails?.reasonForStreet && <div className="space-y-1 sm:col-span-2"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reason for Street Life</span><p className="text-sm font-medium text-foreground">{assessmentData.residentialDetails.reasonForStreet}</p></div>}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Admission Details */}
                 <Card className="border-primary/20 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -862,14 +1026,21 @@ const ClientDetails = () => {
                 </Card>
 
                 {/* Pre-Admission & Vulnerability */}
-                <Card className="border-secondary/20 shadow-sm hover:shadow-md transition-shadow duration-200 mb-6">
-                    <CardHeader className="py-3 px-4 border-b border-secondary/20 bg-secondary/10">
-                        <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
-                            <Home className="h-5 w-5 text-secondary" />
-                            Pre-Admission & Vulnerability
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-4">
+                {assessmentData && (
+                    assessmentData.preAdmissionLiving || assessmentData.preAdmissionPerson1Name || 
+                    assessmentData.preAdmissionPerson1Rel || assessmentData.preAdmissionPhone || 
+                    assessmentData.preAdmissionIsCCI || assessmentData.preAdmissionCCIDetails || 
+                    assessmentData.vulnerabilityType || assessmentData.vulnerabilityLocationStreet || 
+                    assessmentData.vulnerabilityLocationSeparation || assessmentData.vulnerabilityOther
+                ) && (
+                    <Card className="border-secondary/20 shadow-sm hover:shadow-md transition-shadow duration-200 mb-6">
+                        <CardHeader className="py-3 px-4 border-b border-secondary/20 bg-secondary/10">
+                            <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
+                                <Home className="h-5 w-5 text-secondary" />
+                                Pre-Admission & Vulnerability
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             {assessmentData?.preAdmissionLiving && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Living Situation</span><p className="text-sm font-medium text-foreground">{assessmentData.preAdmissionLiving}</p></div>}
                             {assessmentData?.preAdmissionPerson1Name && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Primary Contact Name</span><p className="text-sm font-medium text-foreground">{assessmentData.preAdmissionPerson1Name}</p></div>}
@@ -884,6 +1055,7 @@ const ClientDetails = () => {
                         </div>
                     </CardContent>
                 </Card>
+                )}
 
                 {/* Education Information */}
                 <Card className="border-secondary/20 shadow-sm hover:shadow-md transition-shadow duration-200 mb-6">
@@ -909,6 +1081,14 @@ const ClientDetails = () => {
                             {assessmentData?.educationPreviousType && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Type</span><p className="text-sm font-medium text-foreground">{assessmentData.educationPreviousType}</p></div>}
                             {assessmentData?.educationPreviousMode && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Mode</span><p className="text-sm font-medium text-foreground">{assessmentData.educationPreviousMode}</p></div>}
                             {assessmentData?.educationPreviousNameLocation && <div className="space-y-1 sm:col-span-2"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Name & Location</span><p className="text-sm font-medium text-foreground">{assessmentData.educationPreviousNameLocation}</p></div>}
+                            
+                            {assessmentData?.schoolInfo?.typeOfSchool && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Type of School</span><p className="text-sm font-medium text-foreground">{assessmentData.schoolInfo.typeOfSchool}</p></div>}
+                            {assessmentData?.schoolInfo?.schoolLocation && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">School Location</span><p className="text-sm font-medium text-foreground">{assessmentData.schoolInfo.schoolLocation}</p></div>}
+                            {assessmentData?.schoolInfo?.classForm && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Class/Form</span><p className="text-sm font-medium text-foreground">{assessmentData.schoolInfo.classForm}</p></div>}
+                            {assessmentData?.schoolInfo?.likedSchool && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Liked School</span><p className="text-sm font-medium text-foreground">{assessmentData.schoolInfo.likedSchool}</p></div>}
+                            {assessmentData?.schoolInfo?.favoriteSubject && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Favorite Subject</span><p className="text-sm font-medium text-foreground">{assessmentData.schoolInfo.favoriteSubject}</p></div>}
+                            {assessmentData?.schoolInfo?.skillPrior && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Skill/Trade Prior</span><p className="text-sm font-medium text-foreground">{assessmentData.schoolInfo.skillPrior}</p></div>}
+                            {assessmentData?.schoolInfo?.interestBackToSchool && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Interest back to school</span><p className="text-sm font-medium text-foreground">{assessmentData.schoolInfo.interestBackToSchool}</p></div>}
                         </div>
                     </CardContent>
                 </Card>
@@ -947,6 +1127,9 @@ const ClientDetails = () => {
                                                     {client.father_occupation && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Occupation</span><p className="text-sm font-medium text-foreground">{client.father_occupation}</p></div>}
                                                     {client.father_contact && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</span><p className="text-sm font-medium text-foreground">{client.father_contact}</p></div>}
                                                     {client.father_location && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</span><p className="text-sm font-medium text-foreground">{client.father_location}</p></div>}
+                                                    {assessmentData?.fatherDetails?.type && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Father Type</span><p className="text-sm font-medium text-foreground">{assessmentData.fatherDetails.type}</p></div>}
+                                                    {assessmentData?.fatherDetails?.religion && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Religion</span><p className="text-sm font-medium text-foreground">{assessmentData.fatherDetails.religion}</p></div>}
+                                                    {assessmentData?.fatherDetails?.ethnicCommunity && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ethnic Community</span><p className="text-sm font-medium text-foreground">{assessmentData.fatherDetails.ethnicCommunity}</p></div>}
                                                 </div>
                                             </div>
                                         )}
@@ -963,6 +1146,9 @@ const ClientDetails = () => {
                                                     {client.mother_occupation && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Occupation</span><p className="text-sm font-medium text-foreground">{client.mother_occupation}</p></div>}
                                                     {client.mother_contact && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</span><p className="text-sm font-medium text-foreground">{client.mother_contact}</p></div>}
                                                     {client.mother_location && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</span><p className="text-sm font-medium text-foreground">{client.mother_location}</p></div>}
+                                                    {assessmentData?.motherDetails?.type && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mother Type</span><p className="text-sm font-medium text-foreground">{assessmentData.motherDetails.type}</p></div>}
+                                                    {assessmentData?.motherDetails?.religion && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Religion</span><p className="text-sm font-medium text-foreground">{assessmentData.motherDetails.religion}</p></div>}
+                                                    {assessmentData?.motherDetails?.ethnicCommunity && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ethnic Community</span><p className="text-sm font-medium text-foreground">{assessmentData.motherDetails.ethnicCommunity}</p></div>}
                                                 </div>
                                             </div>
                                         )}
@@ -979,12 +1165,15 @@ const ClientDetails = () => {
                                                     {client.guardian_occupation && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Occupation</span><p className="text-sm font-medium text-foreground">{client.guardian_occupation}</p></div>}
                                                     {client.guardian_contact && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</span><p className="text-sm font-medium text-foreground">{client.guardian_contact}</p></div>}
                                                     {client.guardian_location && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</span><p className="text-sm font-medium text-foreground">{client.guardian_location}</p></div>}
-                                            {client.family_composition && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Family Composition</span><p className="text-sm font-medium text-foreground">{client.family_composition}</p></div>}
-                                            {client.siblings_info && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Siblings Info</span><p className="text-sm font-medium text-foreground">{client.siblings_info}</p></div>}
-                                            {assessmentData?.parentsLivingTogether && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parents Living Together</span><p className="text-sm font-medium text-foreground">{assessmentData.parentsLivingTogether}</p></div>}
-                                            {assessmentData?.contactWithFamily && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact With Family</span><p className="text-sm font-medium text-foreground">{assessmentData.contactWithFamily}</p></div>}
-                                            {assessmentData?.contactWithFamilyWhom && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact With Whom</span><p className="text-sm font-medium text-foreground">{assessmentData.contactWithFamilyWhom}</p></div>}
-                                            {assessmentData?.familyVisitFrequency && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Visit Frequency</span><p className="text-sm font-medium text-foreground">{assessmentData.familyVisitFrequency}</p></div>}
+                                                    {assessmentData?.guardianDetails?.type && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Guardian Type</span><p className="text-sm font-medium text-foreground">{assessmentData.guardianDetails.type === "Other" ? assessmentData.guardianDetails.typeOther : assessmentData.guardianDetails.type}</p></div>}
+                                                    {assessmentData?.guardianDetails?.ethnicCommunity && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ethnic Community</span><p className="text-sm font-medium text-foreground">{assessmentData.guardianDetails.ethnicCommunity}</p></div>}
+                                                    {client.family_composition && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Family Composition</span><p className="text-sm font-medium text-foreground">{client.family_composition}</p></div>}
+                                                    {assessmentData?.parentsMaritalStatus && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parents Marital Status</span><p className="text-sm font-medium text-foreground">{assessmentData.parentsMaritalStatus}</p></div>}
+                                                    {client.siblings_info && <div className="space-y-1 sm:col-span-2 md:col-span-3"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Siblings Info</span><p className="text-sm font-medium text-foreground">{formatSiblingsInfo(client.siblings_info)}</p></div>}
+                                                    {assessmentData?.parentsLivingTogether && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parents Living Together</span><p className="text-sm font-medium text-foreground">{assessmentData.parentsLivingTogether}</p></div>}
+                                                    {assessmentData?.contactWithFamily && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact With Family</span><p className="text-sm font-medium text-foreground">{assessmentData.contactWithFamily}</p></div>}
+                                                    {assessmentData?.contactWithFamilyWhom && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact With Whom</span><p className="text-sm font-medium text-foreground">{assessmentData.contactWithFamilyWhom}</p></div>}
+                                                    {assessmentData?.familyVisitFrequency && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Visit Frequency</span><p className="text-sm font-medium text-foreground">{assessmentData.familyVisitFrequency}</p></div>}
                                                 </div>
                                             </div>
                                         )}
@@ -1221,6 +1410,17 @@ const ClientDetails = () => {
 
                 {/* Health & Wellbeing */}
                 {assessmentData && (
+                    assessmentData.healthCurrent || assessmentData.healthCurrentStatus || 
+                    assessmentData.healthChronic || assessmentData.healthChronicStatus || 
+                    assessmentData.healthHistory || assessmentData.healthMeds || 
+                    assessmentData.healthMedsStatus || assessmentData.healthAllergies || 
+                    assessmentData.healthAllergyStatus || assessmentData.healthImmunization || 
+                    assessmentData.healthImmunizationStatus || assessmentData.healthFeeding || 
+                    assessmentData.healthGrowth || assessmentData.hasVisionDifficulty || 
+                    assessmentData.hasHearingDifficulty || assessmentData.hasMobilityDifficulty || 
+                    assessmentData.hasCognitiveDifficulty || assessmentData.hasSelfCareDifficulty || 
+                    assessmentData.hasCommDifficulty
+                ) && (
                         <Card className="border-red-500/20 shadow-sm hover:shadow-md transition-shadow duration-200">
                             <CardHeader className="py-3 px-4 border-b border-red-500/20 bg-red-500/10">
                                 <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
@@ -1619,6 +1819,67 @@ const ClientDetails = () => {
                             </CardContent>
                         </Card>
                     )}
+
+                {/* For Official Use Only */}
+                {assessmentData?.officialSignatures && (
+                    <Card className="border-secondary/20 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <CardHeader className="py-3 px-4 border-b border-secondary/20 bg-secondary/10">
+                            <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
+                                <ClipboardList className="h-5 w-5 text-secondary" />
+                                For Official Use Only
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                                {assessmentData.officialSignatures.socialWorker?.name && (
+                                    <div className="p-4 rounded-md border border-secondary/20 bg-secondary/5">
+                                        <h4 className="text-xs font-bold uppercase tracking-wide text-secondary mb-2 flex items-center gap-2">
+                                            Social Worker
+                                        </h4>
+                                        <div className="space-y-1">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
+                                            <p className="text-sm font-medium text-foreground">{assessmentData.officialSignatures.socialWorker.name}</p>
+                                        </div>
+                                        <div className="space-y-1 mt-2">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date</span>
+                                            <p className="text-sm font-medium text-foreground">{assessmentData.officialSignatures.socialWorker.date || "N/A"}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {assessmentData.officialSignatures.headOfRehab?.name && (
+                                    <div className="p-4 rounded-md border border-secondary/20 bg-secondary/5">
+                                        <h4 className="text-xs font-bold uppercase tracking-wide text-secondary mb-2 flex items-center gap-2">
+                                            Head of Rehab / Principal
+                                        </h4>
+                                        <div className="space-y-1">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
+                                            <p className="text-sm font-medium text-foreground">{assessmentData.officialSignatures.headOfRehab.name}</p>
+                                        </div>
+                                        <div className="space-y-1 mt-2">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date</span>
+                                            <p className="text-sm font-medium text-foreground">{assessmentData.officialSignatures.headOfRehab.date || "N/A"}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {assessmentData.officialSignatures.director?.name && (
+                                    <div className="p-4 rounded-md border border-secondary/20 bg-secondary/5">
+                                        <h4 className="text-xs font-bold uppercase tracking-wide text-secondary mb-2 flex items-center gap-2">
+                                            Director
+                                        </h4>
+                                        <div className="space-y-1">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
+                                            <p className="text-sm font-medium text-foreground">{assessmentData.officialSignatures.director.name}</p>
+                                        </div>
+                                        <div className="space-y-1 mt-2">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date</span>
+                                            <p className="text-sm font-medium text-foreground">{assessmentData.officialSignatures.director.date || "N/A"}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* General/Additional Notes */}
                 {actualNotes && !actualNotes.trim().startsWith('{') && (
