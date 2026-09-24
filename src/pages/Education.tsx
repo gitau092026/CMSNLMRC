@@ -806,7 +806,7 @@ const Education = () => {
 
       {/* Subject Dialog */}
       <Dialog open={subjectDialogOpen} onOpenChange={setSubjectDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-full sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingSubject ? 'Edit Subject' : 'Add New Subject'}</DialogTitle>
             <DialogDescription>
@@ -885,7 +885,7 @@ const Education = () => {
  </DialogDescription>
  </DialogHeader>
  <div className="space-y-4 py-4">
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label htmlFor="term">Term *</Label>
  <Select value={marksForm.term} onValueChange={(value) => setMarksForm({ ...marksForm, term: value })}>
@@ -976,7 +976,7 @@ const Education = () => {
 
  {/* View Report Dialog */}
  <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
- <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+ <DialogContent className="w-[95vw] max-w-3xl max-h-[80vh] overflow-y-auto">
  <DialogHeader>
  <DialogTitle className="flex items-center gap-2">
  <Award className="h-5 w-5 text-orange-500" />
@@ -1065,7 +1065,7 @@ const Education = () => {
 
  {/* Aggregate Report Preview Dialog */}
  <Dialog open={aggregateReportOpen} onOpenChange={setAggregateReportOpen}>
-  <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+  <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] flex flex-col">
    <DialogHeader>
     <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
      <FileText className="h-5 w-5 text-orange-500" />
@@ -1102,8 +1102,8 @@ const Education = () => {
     {/* Students Table */}
     <div>
      <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Enrolled Students</h3>
-     <div className="rounded-xl border border-neutral-200 overflow-hidden">
-      <Table>
+     <div className="rounded-xl border border-neutral-200 overflow-hidden overflow-x-auto">
+      <Table className="min-w-[500px]">
        <TableHeader className="bg-slate-50">
         <TableRow>
          <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Name</TableHead>
@@ -1139,8 +1139,8 @@ const Education = () => {
     {/* Subjects Table */}
     <div>
      <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Available Subjects</h3>
-     <div className="rounded-xl border border-neutral-200 overflow-hidden">
-      <Table>
+     <div className="rounded-xl border border-neutral-200 overflow-hidden overflow-x-auto">
+      <Table className="min-w-[500px]">
        <TableHeader className="bg-slate-50">
         <TableRow>
          <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wider">Subject</TableHead>
@@ -1193,7 +1193,7 @@ const Education = () => {
 
  {/* Edit Education Level Dialog */}
  <Dialog open={eduLevelDialogOpen} onOpenChange={setEduLevelDialogOpen}>
-  <DialogContent className="max-w-sm">
+  <DialogContent className="max-w-sm w-[95vw] max-w-full">
    <DialogHeader>
     <DialogTitle className="text-lg font-bold text-slate-800">Set Education Level</DialogTitle>
     <DialogDescription>

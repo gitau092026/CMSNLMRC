@@ -59,7 +59,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Navigate } from "react-router-dom";
 
-type AppRole = "admin" | "social_work" | "education" | "counselling" | "empowerment" | "aftercare" | "alumni";
+type AppRole = "admin" | "social_work" | "education" | "counselling" | "empowerment" | "aftercare" | "alumni" | "intern_social_work" | "intern_counselling";
 
 interface UserData {
     id: string;
@@ -95,6 +95,8 @@ const roleLabels: Record<AppRole, string> = {
     empowerment: "Empowerment",
     aftercare: "Aftercare",
     alumni: "Alumni",
+    intern_social_work: "Intern - Social Work",
+    intern_counselling: "Intern - Counselling",
 };
 
 const roleIcons: Record<AppRole, React.ElementType> = {
@@ -103,8 +105,10 @@ const roleIcons: Record<AppRole, React.ElementType> = {
     education: GraduationCap,
     counselling: MessageCircle,
     empowerment: Lightbulb,
-    aftercare: Heart, // Using Heart as a fallback for now or specific icon if available
-    alumni: GraduationCap, // Using GraduationCap as fallback
+    aftercare: Heart,
+    alumni: GraduationCap,
+    intern_social_work: Heart,
+    intern_counselling: MessageCircle,
 };
 
 const roleColors: Record<AppRole, string> = {
@@ -115,6 +119,8 @@ const roleColors: Record<AppRole, string> = {
     empowerment: "bg-orange-100 text-orange-700 border-orange-300",
     aftercare: "bg-rose-100 text-rose-700 border-rose-300",
     alumni: "bg-indigo-100 text-indigo-700 border-indigo-300",
+    intern_social_work: "bg-teal-100 text-teal-700 border-teal-300",
+    intern_counselling: "bg-violet-100 text-violet-700 border-violet-300",
 };
 
 export default function ManageUsers() {
@@ -547,7 +553,7 @@ export default function ManageUsers() {
                             </div>
                         ) : (
                             <div className="rounded-md border overflow-x-auto">
-                                <Table>
+                                <Table className="min-w-[600px]">
                                     <TableHeader className="bg-slate-800">
                                         <TableRow>
                                             <TableHead className="text-white font-semibold">
@@ -662,7 +668,7 @@ export default function ManageUsers() {
 
             {/* Add User Dialog */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md w-[95vw] max-w-full">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <UserPlus className="h-5 w-5 text-purple-600" />
@@ -736,6 +742,8 @@ export default function ManageUsers() {
                                     <SelectItem value="empowerment">Empowerment</SelectItem>
                                     <SelectItem value="aftercare">Aftercare</SelectItem>
                                     <SelectItem value="alumni">Alumni</SelectItem>
+                                    <SelectItem value="intern_social_work">Intern - Social Work</SelectItem>
+                                    <SelectItem value="intern_counselling">Intern - Counselling</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -759,7 +767,7 @@ export default function ManageUsers() {
 
             {/* Edit Role Dialog */}
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md w-[95vw] max-w-full">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Edit className="h-5 w-5 text-blue-600" />
@@ -790,6 +798,8 @@ export default function ManageUsers() {
                                     <SelectItem value="empowerment">Empowerment</SelectItem>
                                     <SelectItem value="aftercare">Aftercare</SelectItem>
                                     <SelectItem value="alumni">Alumni</SelectItem>
+                                    <SelectItem value="intern_social_work">Intern - Social Work</SelectItem>
+                                    <SelectItem value="intern_counselling">Intern - Counselling</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

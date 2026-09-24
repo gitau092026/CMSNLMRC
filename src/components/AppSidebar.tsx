@@ -1,4 +1,4 @@
-import { Home, Users, UserPlus, Heart, MapPin, GraduationCap, MessageCircle, Lightbulb, Settings, Medal, LogOut, ClipboardList, FileText } from "lucide-react";
+import { Home, Users, UserPlus, Heart, MapPin, GraduationCap, MessageCircle, Lightbulb, Settings, Medal, LogOut, ClipboardList, FileText, StickyNote } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -18,21 +18,22 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 const navigationItems = [
-  { title: "Dashboard", url: "/", icon: Home, roles: ["admin", "social_work", "education", "counselling", "empowerment", "aftercare", "alumni"] },
-  { title: "All Clients", url: "/clients", icon: Users, roles: ["admin", "social_work", "education", "counselling", "empowerment"] },
+  { title: "Dashboard", url: "/", icon: Home, roles: ["admin", "social_work", "education", "counselling", "empowerment", "aftercare", "alumni", "intern_social_work", "intern_counselling"] },
+  { title: "All Clients", url: "/clients", icon: Users, roles: ["admin", "social_work", "education", "counselling", "empowerment", "intern_social_work", "intern_counselling"] },
   { title: "Client Assessment", url: "/register", icon: UserPlus, roles: ["admin", "social_work", "counselling"] },
   { title: "Admission Form", url: "/admission", icon: FileText, roles: ["admin", "social_work", "counselling"] },
   { title: "Case Plans", url: "/case-plans", icon: ClipboardList, roles: ["admin", "social_work"] },
-  { title: "Aftercare", url: "/aftercare", icon: Heart, roles: ["admin", "social_work", "aftercare"] },
-  { title: "Reintegration Plans", url: "/reintegration-plans", icon: MapPin, roles: ["admin", "social_work", "education", "counselling", "empowerment"] },
+  { title: "Aftercare", url: "/aftercare", icon: Heart, roles: ["admin", "social_work", "aftercare", "counselling"] },
+  { title: "Reintegration Plans", url: "/reintegration-plans", icon: MapPin, roles: ["admin", "social_work", "education", "counselling", "empowerment", "intern_social_work"] },
   { title: "Education", url: "/education", icon: GraduationCap, roles: ["admin", "education", "social_work", "counselling"] },
-  { title: "Counselling", url: "/counselling", icon: MessageCircle, roles: ["admin", "counselling"] },
+  { title: "Counselling", url: "/counselling", icon: MessageCircle, roles: ["admin", "counselling", "intern_counselling"] },
+  { title: "SOAP Notes", url: "/soap-notes", icon: StickyNote, roles: ["admin", "counselling"] },
   { title: "Empowerment", url: "/empowerment", icon: Lightbulb, roles: ["admin", "empowerment"] },
   { title: "Manage Users", url: "/users", icon: Settings, roles: ["admin"] },
 ];
 
 const additionalItems = [
-  { title: "Alumni", url: "/alumni", icon: Medal, roles: ["admin", "alumni"] },
+  { title: "Alumni", url: "/alumni", icon: Medal, roles: ["admin", "alumni", "counselling", "intern_social_work", "intern_counselling"] },
 ];
 
 export function AppSidebar() {
@@ -125,7 +126,9 @@ export function AppSidebar() {
                         userRole === "counselling" ? "CN" :
                           userRole === "empowerment" ? "EM" :
                             userRole === "aftercare" ? "AC" :
-                              userRole === "alumni" ? "AL" : "U"}
+                              userRole === "alumni" ? "AL" :
+                                userRole === "intern_social_work" ? "IS" :
+                                  userRole === "intern_counselling" ? "IC" : "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
@@ -139,7 +142,9 @@ export function AppSidebar() {
                         userRole === "counselling" ? "Counselling" :
                           userRole === "empowerment" ? "Empowerment" :
                             userRole === "aftercare" ? "Aftercare" :
-                              userRole === "alumni" ? "Alumni" : "Department"}
+                              userRole === "alumni" ? "Alumni" :
+                                userRole === "intern_social_work" ? "Intern - Social Work" :
+                                  userRole === "intern_counselling" ? "Intern - Counselling" : "Department"}
                 </p>
               </div>
             </div>
@@ -163,7 +168,9 @@ export function AppSidebar() {
                       userRole === "counselling" ? "CN" :
                         userRole === "empowerment" ? "EM" :
                           userRole === "aftercare" ? "AC" :
-                            userRole === "alumni" ? "AL" : "U"}
+                            userRole === "alumni" ? "AL" :
+                              userRole === "intern_social_work" ? "IS" :
+                                userRole === "intern_counselling" ? "IC" : "U"}
               </AvatarFallback>
             </Avatar>
             <Button

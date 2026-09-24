@@ -266,8 +266,8 @@ const CasePlanDetails = () => {
  };
 
  return (
- <div className="min-h-screen bg-background w-full">
- <div className="sticky top-14 z-10 shadow-md bg-gradient-to-r from-blue-600 to-cyan-600 h-24 flex items-center px-4 sm:px-6 lg:px-8">
+ <div className="min-h-screen bg-background w-full overflow-x-hidden">
+ <div className="sticky top-14 z-10 shadow-md bg-gradient-to-r from-blue-600 to-cyan-600 h-24 flex items-center px-4 sm:px-6 lg:px-8 overflow-x-hidden">
  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
  <div className="relative flex items-center gap-4 w-full">
  <Button variant="ghost" className="text-white hover:bg-white/20" onClick={() => navigate("/case-plans")}>
@@ -287,7 +287,7 @@ const CasePlanDetails = () => {
  </div>
  </div>
 
- <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+ <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto overflow-x-hidden">
  <Card className="mb-8 border-l-4 border-l-blue-500">
  <CardContent className="p-6">
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

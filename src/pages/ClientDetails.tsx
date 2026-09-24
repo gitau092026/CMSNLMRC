@@ -736,12 +736,13 @@ const ClientDetails = () => {
         }
 
         doc.save(`${client.name.replace(/\s+/g, '_')}_Details.pdf`);
-        
+
         toast({
             title: "PDF Exported",
             description: "Client details have been exported to PDF successfully.",
         });
     };
+
 
 
 
@@ -1216,8 +1217,8 @@ const ClientDetails = () => {
                                         {((assessmentData?.siblingsList && assessmentData.siblingsList.length > 0) || assessmentData?.siblings) && (
                                             <div className="space-y-3">
                                                 <h4 className="text-xs font-bold uppercase tracking-wide text-secondary ml-1">Siblings</h4>
-                                                <div className="overflow-hidden rounded-md border border-secondary/20">
-                                                    <table className="w-full text-sm text-left">
+                                                <div className="overflow-x-auto rounded-md border border-secondary/20">
+                                                    <table className="w-full text-sm text-left min-w-[500px]">
                                                         <thead className="bg-secondary/10 text-secondary border-b border-secondary/20">
                                                             <tr>
                                                                 <th className="px-4 py-3 font-semibold text-left">Name / Nickname</th>
@@ -1257,8 +1258,8 @@ const ClientDetails = () => {
                                         {assessmentData?.otherRelativesList && assessmentData.otherRelativesList.length > 0 && (
                                             <div className="space-y-3">
                                                 <h4 className="text-xs font-bold uppercase tracking-wide text-secondary ml-1">Other Relatives</h4>
-                                                <div className="overflow-hidden rounded-md border border-secondary/20">
-                                                    <table className="w-full text-sm text-left">
+                                                <div className="overflow-x-auto rounded-md border border-secondary/20">
+                                                    <table className="w-full text-sm text-left min-w-[500px]">
                                                         <thead className="bg-secondary/10 text-secondary border-b border-secondary/20">
                                                             <tr>
                                                                 <th className="px-4 py-3 font-semibold text-left">Name</th>
@@ -1893,8 +1894,8 @@ const ClientDetails = () => {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-4">
-                            <div className="overflow-hidden rounded-md border border-secondary/20">
-                                <table className="w-full text-sm text-left">
+                            <div className="overflow-x-auto rounded-md border border-secondary/20">
+                                <table className="w-full text-sm text-left min-w-[300px]">
                                     <tbody>
                                         <tr className="hover:bg-secondary/5">
                                             <td className="px-4 py-4 font-medium whitespace-pre-wrap text-foreground break-words">{actualNotes}</td>
@@ -1930,14 +1931,14 @@ const ClientDetails = () => {
                                             </Badge>
                                         </div>
 
-                                        <div className="overflow-hidden rounded-md border border-secondary/20">
-                                            <table className="w-full text-sm text-left">
-                                                <tbody className="divide-y divide-secondary/10">
-                                                    {/* Row 1: Institution & Course */}
-                                                    <tr className="hover:bg-secondary/5">
-                                                        <td className="px-4 py-3 font-semibold text-muted-foreground w-1/3 sm:w-1/4 bg-secondary/5">Institution/Workshop</td>
-                                                        <td className="px-4 py-3 font-medium">{record.institution_workshop}</td>
-                                                    </tr>
+                                        <div className="overflow-x-auto rounded-md border border-secondary/20">
+                                                <table className="w-full text-sm text-left min-w-[500px]">
+                                                    <tbody className="divide-y divide-secondary/10">
+                                                        {/* Row 1: Institution & Course */}
+                                                        <tr className="hover:bg-secondary/5">
+                                                            <td className="px-4 py-3 font-semibold text-muted-foreground w-1/3 sm:w-1/4 bg-secondary/5">Institution/Workshop</td>
+                                                            <td className="px-4 py-3 font-medium">{record.institution_workshop}</td>
+                                                        </tr>
                                                     {record.placement_course && (
                                                         <tr className="hover:bg-secondary/5">
                                                             <td className="px-4 py-3 font-semibold text-muted-foreground bg-secondary/5">Course/Class</td>
@@ -2017,7 +2018,8 @@ const ClientDetails = () => {
                 )}
 
             </div>
-        </div>
+
+</div>
     );
 };
 

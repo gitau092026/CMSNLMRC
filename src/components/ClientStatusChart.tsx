@@ -15,10 +15,13 @@ interface ClientStatusChartProps {
 }
 
 const PALETTE = [
+  "#16a34a", // Active - bright green
   "#3b82f6", "#14b8a6", "#f59e0b", "#8b5cf6",
   "#64748b", "#e11d48", "#0ea5e9", "#10b981",
   "#f43f5e", "#d946ef",
 ];
+
+const isActive = (name: string) => name.toLowerCase() === "active";
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -38,11 +41,18 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 const RADIAN = Math.PI / 180;
-const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   if (percent < 0.07) return null;
+  if (isActive(name)) {
+    return (
+      <text x={cx} y={cy - 8} fill="#16a34a" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={800}>
+        ACTIVE
+      </text>
+    );
+  }
   return (
     <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
       {`${(percent * 100).toFixed(0)}%`}
@@ -91,7 +101,13 @@ export function ClientStatusChart({ data, loading }: ClientStatusChartProps) {
                     animationDuration={700}
                   >
                     {enriched.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                        stroke={isActive(entry.name) ? entry.color : "white"}
+                        strokeWidth={isActive(entry.name) ? 5 : 2}
+                        style={isActive(entry.name) ? { filter: "drop-shadow(0 0 8px #16a34a)" } : {}}
+                      />
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip />} />
@@ -100,14 +116,24 @@ export function ClientStatusChart({ data, loading }: ClientStatusChartProps) {
             </div>
             <div className="mt-3 space-y-1.5 border-t border-slate-50 pt-3 max-h-[140px] overflow-y-auto pr-1">
               {enriched.map((entry) => (
-                <div key={entry.name} className="flex items-center justify-between">
+                <div
+                  key={entry.name}
+                  className={`flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors ${
+                    isActive(entry.name) ? "bg-emerald-50 border border-emerald-200" : ""
+                  }`}
+                >
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entry.color }} />
-                    <span className="text-xs font-medium text-slate-500 truncate max-w-[110px]" title={entry.name}>{entry.name}</span>
+                    <span className={`text-xs font-medium truncate max-w-[110px] ${isActive(entry.name) ? "text-emerald-700 font-bold" : "text-slate-500"}`} title={entry.name}>
+                      {entry.name}
+                      {isActive(entry.name) && (
+                        <span className="ml-1.5 text-[9px] bg-emerald-500 text-white rounded-full px-1.5 py-0.5 font-bold uppercase">Active</span>
+                      )}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-800">{entry.value}</span>
-                    <span className="text-[10px] text-slate-300 w-8 text-right">
+                    <span className={`text-xs font-bold ${isActive(entry.name) ? "text-emerald-700" : "text-slate-800"}`}>{entry.value}</span>
+                    <span className={`text-[10px] w-8 text-right ${isActive(entry.name) ? "text-emerald-500" : "text-slate-300"}`}>
                       {total > 0 ? `${Math.round((entry.value / total) * 100)}%` : "0%"}
                     </span>
                   </div>

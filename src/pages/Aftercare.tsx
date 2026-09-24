@@ -51,7 +51,7 @@ const Aftercare = () => {
  const { toast } = useToast();
  const { user } = useAuth();
  const isAdmin = user?.role === 'admin';
- const canEdit = isAdmin || user?.role === 'social_work';
+ const canEdit = isAdmin || user?.role === 'social_work' || user?.role === 'counsellor' || user?.role === 'intern_social_work' || user?.role === 'intern_counselling';
  const [clients, setClients] = useState<ClientWithAftercare[]>([]);
  const [loading, setLoading] = useState(true);
  const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -387,7 +387,7 @@ const Aftercare = () => {
                                   Delete
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent>
+                              <AlertDialogContent className="w-[95vw] max-w-full sm:max-w-lg">
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Delete Aftercare Record</AlertDialogTitle>
                                   <AlertDialogDescription>

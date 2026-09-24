@@ -227,17 +227,17 @@ const ClientReintegrationPlans = () => {
  {homeVisits.map((visit) => (
  <Card key={visit.id} className="border-t-4 border-t-orange-500">
  <CardHeader>
- <div className="flex items-start justify-between">
- <div className="space-y-2">
+ <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+ <div className="space-y-2 min-w-0">
  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
- <FileText className="h-5 w-5" />
+ <FileText className="h-5 w-5 shrink-0" />
  Reintegration Plan - {new Date(visit.visit_date).toLocaleDateString()}
  </CardTitle>
- <Badge className="bg-teal-500/10 text-teal-600 hover:bg-teal-500/20 border-teal-500/20">
+ <Badge className="bg-teal-500/10 text-teal-600 hover:bg-teal-500/20 border-teal-500/20 whitespace-nowrap">
  REINTEGRATION PLAN
  </Badge>
  </div>
- <div className="flex gap-2">
+ <div className="flex gap-2 flex-wrap w-full sm:w-auto">
  <Button
  variant="outline"
  size="sm"

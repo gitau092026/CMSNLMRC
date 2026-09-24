@@ -55,6 +55,7 @@ import {
 import { supabase } from"@/integrations/supabase/client";
 import { useToast } from"@/hooks/use-toast";
 import { useAuth } from"@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 interface AftercareRecord {
  id: string;
@@ -79,7 +80,7 @@ export default function Alumni() {
  const { toast } = useToast();
  const { user } = useAuth();
  const isAdmin = user?.role === 'admin';
- const canEdit = isAdmin || user?.role === 'social_work';
+ const canEdit = isAdmin || user?.role === 'social_work' || user?.role === 'counsellor' || user?.role === 'intern_social_work' || user?.role === 'intern_counselling';
  const [alumni, setAlumni] = useState<AlumniClient[]>([]);
  const [loading, setLoading] = useState(true);
  const [exitRecords, setExitRecords] = useState<Record<string, string>>({});
@@ -346,7 +347,7 @@ export default function Alumni() {
 
  {/* Alumni Table */}
  <div className="rounded-md border overflow-x-auto">
- <Table>
+ <Table className="min-w-[600px]">
  <TableHeader className="bg-gradient-to-r from-orange-500 to-purple-500">
  <TableRow>
  <TableHead className="text-white font-semibold">ALUMNI</TableHead>
@@ -392,7 +393,7 @@ export default function Alumni() {
  </div>
  </TableCell>
  <TableCell>
- <Badge className={getStatusColor(person.status)}>• {person.status}</Badge>
+ <Badge className={cn(getStatusColor(person.status), "whitespace-nowrap")}>• {person.status}</Badge>
  </TableCell>
  <TableCell>
  <div className="flex items-center gap-2">

@@ -49,8 +49,13 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
 };
 
 export function AftercareChart({ data, loading }: AftercareChartProps) {
-  const enriched = (data || []).map((d, i) => ({ ...d, color: PALETTE[i % PALETTE.length] }));
+  const enriched = (data || []).map((d, i) => ({
+    ...d,
+    color: d.color || (d.name === "Awaiting Placement" ? "#f59e0b" : PALETTE[i % PALETTE.length])
+  }));
   const total = enriched.reduce((sum, d) => sum + d.value, 0);
+  const placedTotal = enriched.filter(d => d.name !== "Awaiting Placement").reduce((sum, d) => sum + d.value, 0);
+  const awaitingTotal = enriched.find(d => d.name === "Awaiting Placement")?.value || 0;
   const hasData = enriched.length > 0 && total > 0;
 
   return (
@@ -62,7 +67,7 @@ export function AftercareChart({ data, loading }: AftercareChartProps) {
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-800">Nature of Placements</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Aftercare placement types</p>
+            <p className="text-xs text-slate-400 mt-0.5">Alumni placement status & types</p>
           </div>
         </div>
       </CardHeader>
@@ -101,19 +106,26 @@ export function AftercareChart({ data, loading }: AftercareChartProps) {
                 <div key={entry.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entry.color }} />
-                    <span className="text-xs font-medium text-slate-500 truncate max-w-[120px]" title={entry.name}>{entry.name}</span>
+                    <span className="text-xs font-medium text-slate-500 truncate max-w-[150px]" title={entry.name}>{entry.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-800">{entry.value}</span>
-                    <span className="text-[10px] text-slate-300 w-8 text-right">
+                    <span className="text-[10px] text-slate-400 w-9 text-right font-medium">
                       {total > 0 ? `${Math.round((entry.value / total) * 100)}%` : "0%"}
                     </span>
                   </div>
                 </div>
               ))}
               <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1">
-                <span className="text-xs font-semibold text-slate-400">Total Placed</span>
-                <span className="text-xs font-extrabold text-slate-800">{total}</span>
+                <span className="text-xs font-semibold text-slate-400">Total Alumni</span>
+                <div className="text-right">
+                  <span className="text-xs font-extrabold text-slate-800">{total}</span>
+                  {awaitingTotal > 0 && (
+                    <span className="text-[10px] text-slate-400 ml-1.5 font-medium">
+                      ({placedTotal} placed, {awaitingTotal} awaiting)
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </>

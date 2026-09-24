@@ -12,7 +12,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { FileText, StickyNote, LogOut, FolderOpen, Calendar, User, UserPlus } from "lucide-react";
+import { FileText, StickyNote, LogOut, FolderOpen, Calendar, User, UserPlus, Download, Clock } from "lucide-react";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -131,6 +133,12 @@ export default function Counselling() {
 
   // Client Records View State
   const [selectedRecordsClient, setSelectedRecordsClient] = useState<Client | null>(null);
+
+  // View SOAP Notes Dialog State
+  const [viewSoapDialogOpen, setViewSoapDialogOpen] = useState(false);
+  const [viewSoapClient, setViewSoapClient] = useState<Client | null>(null);
+  const [viewSoapNotes, setViewSoapNotes] = useState<any[]>([]);
+  const [loadingSoapNotes, setLoadingSoapNotes] = useState(false);
 
   useEffect(() => {
     fetchClients();
@@ -323,6 +331,93 @@ export default function Counselling() {
     }
   };
 
+  // View SOAP Notes Handler
+  const handleViewSoapNotes = async (client: Client) => {
+    try {
+      setLoadingSoapNotes(true);
+      const { data, error } = await supabase
+        .from('soap_notes')
+        .select('*')
+        .eq('client_id', client.id)
+        .order('session_date', { ascending: false });
+
+      if (error) throw error;
+      setViewSoapNotes(data || []);
+      setViewSoapClient(client);
+      setViewSoapDialogOpen(true);
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setLoadingSoapNotes(false);
+    }
+  };
+
+  // Export single SOAP note to PDF
+  const handleExportSoapNotePDF = async (note: any, clientName: string) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    let startY = 20;
+    try {
+      const logoUrl = '/mwangaza_logo.png';
+      const img = new Image();
+      img.src = logoUrl;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject();
+      });
+      if (img.width) {
+        const imgWidth = 30;
+        const imgHeight = (img.height * imgWidth) / img.width;
+        const imgX = (pageWidth - imgWidth) / 2;
+        doc.addImage(img, 'PNG', imgX, 10, imgWidth, imgHeight);
+        startY = 10 + imgHeight + 8;
+      }
+    } catch {
+      console.error("Error adding logo to PDF");
+    }
+    doc.setFontSize(20);
+    doc.setTextColor(40, 40, 40);
+    doc.text("SOAP Note", pageWidth / 2, startY, { align: "center" });
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, startY + 6, { align: "center" });
+    let finalY = startY + 14;
+    autoTable(doc, {
+      startY: finalY,
+      head: [[{ content: 'Session Information', colSpan: 2, styles: { halign: 'left', fillColor: [63, 81, 181], textColor: 255 } }]],
+      body: [
+        [{ content: 'Client Name', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, clientName],
+        [{ content: 'Counsellor', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.counsellor_name],
+        [{ content: 'Session Date', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.session_date],
+        ...(note.session_time ? [[{ content: 'Session Time', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.session_time]] : []),
+        ...(note.next_session_date ? [[{ content: 'Next Session', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.next_session_date]] : []),
+        ...(note.areas_to_focus ? [[{ content: 'Areas to Focus', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.areas_to_focus]] : []),
+      ],
+      theme: 'grid',
+      columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 'auto' } },
+    });
+    finalY = (doc as any).lastAutoTable.finalY + 8;
+    const addSection = (label: string, content: string | null, color: [number, number, number]) => {
+      if (!content) return;
+      doc.setFontSize(12);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.setFont("helvetica", "bold");
+      doc.text(label, 14, finalY + 6);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(40, 40, 40);
+      doc.setFontSize(10);
+      const lines = doc.splitTextToSize(content, pageWidth - 28);
+      doc.text(lines, 14, finalY + 14);
+      finalY = finalY + 14 + (lines.length * 5) + 8;
+    };
+    addSection('S - SUBJECTIVE', note.subjective, [217, 87, 37]);
+    addSection('O - OBJECTIVE', note.objective, [46, 125, 50]);
+    addSection('A - ASSESSMENT', note.assessment, [63, 81, 181]);
+    addSection('P - PLAN', note.plan, [156, 39, 176]);
+    doc.save(`SOAP_Note_${note.session_date.replace(/\//g, '-')}_${clientName.replace(/\s+/g, '_')}.pdf`);
+    toast({ title: "PDF Exported", description: "SOAP note has been exported to PDF successfully." });
+  };
+
   // If viewing a client's records, show the records component
   if (selectedRecordsClient) {
     return (
@@ -365,7 +460,7 @@ export default function Counselling() {
           </CardHeader>
           <CardContent>
             <div className="rounded-md border overflow-x-auto">
-              <Table>
+              <Table className="min-w-[760px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="font-bold">CLIENT NAME</TableHead>
@@ -428,6 +523,15 @@ export default function Counselling() {
                             <StickyNote className="h-4 w-4 mr-1" />
                             Note
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="whitespace-nowrap"
+                            onClick={(e) => { e.stopPropagation(); handleViewSoapNotes(client); }}
+                          >
+                            <StickyNote className="h-4 w-4 mr-1" />
+                            View Notes
+                          </Button>
                         <Button 
                           size="sm" 
                           className="bg-red-500 hover:bg-red-600 text-white whitespace-nowrap"
@@ -459,7 +563,7 @@ export default function Counselling() {
 
       {/* SOAP Notes Dialog */}
       <Dialog open={soapDialogOpen} onOpenChange={setSoapDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-center border-b pb-4">
               SOAP NOTES
@@ -603,9 +707,97 @@ export default function Counselling() {
         </DialogContent>
       </Dialog>
 
+      {/* View SOAP Notes Dialog */}
+      <Dialog open={viewSoapDialogOpen} onOpenChange={setViewSoapDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center border-b pb-4">
+              SOAP NOTES — {viewSoapClient?.name}
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              All recorded SOAP notes for this client
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="h-[70vh] pr-4">
+            {loadingSoapNotes ? (
+              <p className="text-center text-muted-foreground py-8">Loading notes...</p>
+            ) : viewSoapNotes.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No SOAP notes recorded yet</p>
+            ) : (
+              <div className="space-y-4 p-2">
+                {viewSoapNotes.map((note) => (
+                  <Card key={note.id} className="border-l-4 border-l-orange-500">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-orange-500" />
+                          <span className="font-semibold">{note.session_date}</span>
+                          {note.session_time && (
+                            <>
+                              <Clock className="h-4 w-4 ml-2" />
+                              <span>{note.session_time}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{note.counsellor_name}</Badge>
+                          <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note, viewSoapClient?.name || "")}>
+                            <Download className="h-4 w-4 mr-1" />
+                            Export PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {note.subjective && (
+                        <div>
+                          <h4 className="font-semibold text-orange-600 text-sm">SUBJECTIVE</h4>
+                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.subjective}</p>
+                        </div>
+                      )}
+                      {note.objective && (
+                        <div>
+                          <h4 className="font-semibold text-orange-600 text-sm">OBJECTIVE</h4>
+                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.objective}</p>
+                        </div>
+                      )}
+                      {note.assessment && (
+                        <div>
+                          <h4 className="font-semibold text-orange-600 text-sm">ASSESSMENT</h4>
+                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.assessment}</p>
+                        </div>
+                      )}
+                      {note.plan && (
+                        <div>
+                          <h4 className="font-semibold text-orange-600 text-sm">PLAN</h4>
+                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.plan}</p>
+                        </div>
+                      )}
+                      {note.next_session_date && (
+                        <div>
+                          <h4 className="font-semibold text-sm">Next Session</h4>
+                          <p className="text-sm mt-1">{note.next_session_date}</p>
+                        </div>
+                      )}
+                      {note.areas_to_focus && (
+                        <div>
+                          <h4 className="font-semibold text-sm">Areas to Focus</h4>
+                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.areas_to_focus}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
       {/* Exit Form Dialog */}
       <Dialog open={exitDialogOpen} onOpenChange={setExitDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-center border-b pb-4">
               CLIENT DISCHARGE / EXIT FORM
@@ -681,7 +873,7 @@ export default function Counselling() {
                 {exitFormData.nature_of_discharge === "Incomplete" && (
                   <div className="pl-4 border-l-2 border-orange-500">
                     <Label className="text-sm font-medium">If Incomplete, specify (Tick all that apply)</Label>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                       {["Escapee", "Voluntary discharge", "Early Reintegration", "Involuntary discharge"].map((reason) => (
                         <div key={reason} className="flex items-center space-x-2">
                           <Checkbox 

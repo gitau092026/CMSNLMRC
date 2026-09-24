@@ -524,8 +524,8 @@ const AddCasePlan = () => {
  };
 
  return (
- <div className="min-h-screen bg-background w-full">
- <div className="sticky top-14 z-10 shadow-md bg-gradient-to-r from-blue-600 to-cyan-600 h-24 flex items-center px-4 sm:px-6 lg:px-8">
+ <div className="min-h-screen bg-background w-full overflow-x-hidden">
+ <div className="sticky top-14 z-10 shadow-md bg-gradient-to-r from-blue-600 to-cyan-600 h-24 flex items-center px-4 sm:px-6 lg:px-8 overflow-x-hidden">
  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
  <div className="relative flex items-center gap-4">
  <Button variant="ghost" className="text-white hover:bg-white/20" onClick={() => navigate("/case-plans")}>
@@ -553,12 +553,12 @@ const AddCasePlan = () => {
  {/* EDUCATION GOALS */}
  <Card className="border-t-4 border-t-purple-500">
  <CardHeader>
- <div className="flex items-center justify-between">
- <CardTitle className="flex items-center gap-2">
- <GraduationCap className="h-5 w-5 text-purple-600" />
+ <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+ <CardTitle className="flex items-center gap-2 min-w-0 truncate">
+ <GraduationCap className="h-5 w-5 text-purple-600 shrink-0" />
  Goals for Education
  {savedSections.has("Education") && (
- <CheckCircle2 className="h-4 w-4 text-green-600" />
+ <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
  )}
  </CardTitle>
  <Button
@@ -595,12 +595,12 @@ const AddCasePlan = () => {
  {/* PROTECTION AND SAFETY GOALS */}
  <Card className="border-t-4 border-t-red-500">
  <CardHeader>
- <div className="flex items-center justify-between">
- <CardTitle className="flex items-center gap-2">
- <Shield className="h-5 w-5 text-red-600" />
+ <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+ <CardTitle className="flex items-center gap-2 min-w-0 truncate">
+ <Shield className="h-5 w-5 text-red-600 shrink-0" />
  Goals for Protection and Safety
  {savedSections.has("Protection") && (
- <CheckCircle2 className="h-4 w-4 text-green-600" />
+ <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
  )}
  </CardTitle>
  <Button
@@ -637,12 +637,12 @@ const AddCasePlan = () => {
  {/* PSYCHOSOCIAL WELL-BEING GOALS */}
  <Card className="border-t-4 border-t-green-500">
  <CardHeader>
- <div className="flex items-center justify-between">
- <CardTitle className="flex items-center gap-2">
- <Heart className="h-5 w-5 text-green-600" />
+ <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+ <CardTitle className="flex items-center gap-2 min-w-0 truncate">
+ <Heart className="h-5 w-5 text-green-600 shrink-0" />
  Goals for Psychosocial Well-being and Community Belonging
  {savedSections.has("Psychosocial") && (
- <CheckCircle2 className="h-4 w-4 text-green-600" />
+ <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
  )}
  </CardTitle>
  <Button
@@ -679,13 +679,13 @@ const AddCasePlan = () => {
  {/* HEALTH AND DEVELOPMENT GOALS */}
  <Card className="border-t-4 border-t-blue-500">
  <CardHeader>
- <div className="flex items-center justify-between">
+ <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
  <div>
- <CardTitle className="flex items-center gap-2">
- <Activity className="h-5 w-5 text-blue-600" />
+ <CardTitle className="flex items-center gap-2 min-w-0">
+ <Activity className="h-5 w-5 text-blue-600 shrink-0" />
  Goals for Health and Development (Basic Needs)
  {savedSections.has("Health") && (
- <CheckCircle2 className="h-4 w-4 text-green-600" />
+ <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
  )}
  </CardTitle>
  <p className="text-sm text-muted-foreground mt-1">Including food, nutrition, hygiene, and sanitation</p>
@@ -724,12 +724,12 @@ const AddCasePlan = () => {
  {/* CHILD-CAREGIVER RELATIONSHIP GOALS */}
  <Card className="border-t-4 border-t-orange-500">
  <CardHeader>
- <div className="flex items-center justify-between">
- <CardTitle className="flex items-center gap-2">
- <Users className="h-5 w-5 text-orange-600" />
+ <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+ <CardTitle className="flex items-center gap-2 min-w-0 truncate">
+ <Users className="h-5 w-5 text-orange-600 shrink-0" />
  Goals for Child-Caregiver/Mentor Relationship and Attachment
  {savedSections.has("Relationship") && (
- <CheckCircle2 className="h-4 w-4 text-green-600" />
+ <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
  )}
  </CardTitle>
  <Button
@@ -766,12 +766,12 @@ const AddCasePlan = () => {
  {/* ECONOMIC STABILITY GOALS */}
  <Card className="border-t-4 border-t-yellow-500">
  <CardHeader>
- <div className="flex items-center justify-between">
- <CardTitle className="flex items-center gap-2">
- <DollarSign className="h-5 w-5 text-yellow-600" />
+ <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+ <CardTitle className="flex items-center gap-2 min-w-0 truncate">
+ <DollarSign className="h-5 w-5 text-yellow-600 shrink-0" />
  Goals for Economic Stability
  {savedSections.has("Economic") && (
- <CheckCircle2 className="h-4 w-4 text-green-600" />
+ <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
  )}
  </CardTitle>
  <Button

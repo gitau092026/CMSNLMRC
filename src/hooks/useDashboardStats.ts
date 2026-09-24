@@ -13,7 +13,8 @@ export interface DashboardStats {
   admissions: number;
   exits: number;
   activePlacements: number;
-  
+  totalStreetVisits?: number;
+
   // Chart Data
   systemActivityData: { date: string; visits: number; sessions: number; medical: number }[];
   demographicsData: { name: string; value: number; fill: string }[];
@@ -21,6 +22,13 @@ export interface DashboardStats {
   admissionsExitsData: { month: string; admissions: number; exits: number }[];
   placementData: { name: string; value: number; color: string }[];
   reunificationData: { name: string; value: number; color: string }[];
+  rescueAreaData?: { name: string; value: number }[];
+  programStats: {
+    totalCasePlans: number;
+    totalAftercareRecords: number;
+    totalMedicalRecords: number;
+    totalEducationStudents: number;
+  };
 }
 
 const COLORS = [
@@ -49,22 +57,34 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           soapNotesRes,
           medicalRes,
           exitsRes,
-          aftercareRes
+          aftercareRes,
+          streetVisitsRes,
+          casePlansRes,
+          subjectsRes
         ] = await Promise.all([
           supabase.from("clients").select("*"),
           supabase.from("home_visits").select("*"),
           supabase.from("soap_notes").select("*"),
           supabase.from("medical_records").select("*"),
           supabase.from("exit_records").select("*"),
-          supabase.from("aftercare_records").select("*")
+          supabase.from("aftercare_records").select("*"),
+          supabase.from("street_visits").select("*"),
+          supabase.from("case_plans").select("id"),
+          supabase.from("subjects").select("id")
         ]);
 
-        if (clientsRes.error) throw clientsRes.error;
-        if (visitsRes.error) throw visitsRes.error;
-        if (soapNotesRes.error) throw soapNotesRes.error;
-        if (medicalRes.error) throw medicalRes.error;
-        if (exitsRes.error) throw exitsRes.error;
-        if (aftercareRes.error) throw aftercareRes.error;
+        if (clientsRes.error) {
+          console.error("clients table error:", clientsRes.error);
+          throw clientsRes.error;
+        }
+        if (visitsRes.error) console.warn("home_visits table error:", visitsRes.error);
+        if (soapNotesRes.error) console.warn("soap_notes table error:", soapNotesRes.error);
+        if (medicalRes.error) console.warn("medical_records table error:", medicalRes.error);
+        if (exitsRes.error) console.warn("exit_records table error:", exitsRes.error);
+        if (aftercareRes.error) console.warn("aftercare_records table error:", aftercareRes.error);
+        if (streetVisitsRes?.error) console.warn("street_visits table error:", streetVisitsRes.error);
+        if (casePlansRes?.error) console.warn("case_plans table error:", casePlansRes.error);
+        if (subjectsRes?.error) console.warn("subjects table error:", subjectsRes.error);
 
         const allClients = clientsRes.data || [];
         const allVisits = visitsRes.data || [];
@@ -72,6 +92,9 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
         const allMedical = medicalRes.data || [];
         const allExits = exitsRes.data || [];
         const allAftercare = aftercareRes.data || [];
+        const allStreetVisits = streetVisitsRes?.data || [];
+        const allCasePlans = casePlansRes?.data || [];
+        const allSubjects = subjectsRes?.data || [];
 
         // Determine date range filter
         const now = new Date();
@@ -152,11 +175,17 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
         
         const addActivity = (dateStr: string | null, type: 'visits' | 'sessions' | 'medical') => {
           if (!dateStr) return;
-          const date = format(parseISO(dateStr), 'MMM dd');
-          if (!activityMap[date]) {
-            activityMap[date] = { visits: 0, sessions: 0, medical: 0 };
+          try {
+            const parsed = parseISO(dateStr);
+            if (isNaN(parsed.getTime())) return;
+            const date = format(parsed, 'MMM dd');
+            if (!activityMap[date]) {
+              activityMap[date] = { visits: 0, sessions: 0, medical: 0 };
+            }
+            activityMap[date][type]++;
+          } catch {
+            // ignore invalid date
           }
-          activityMap[date][type]++;
         };
 
         filteredVisits.forEach(v => addActivity(v.visit_date, 'visits'));
@@ -179,16 +208,28 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
         
         allClients.forEach(c => {
           if (!c.admission_date) return;
-          const month = format(parseISO(c.admission_date), 'MMM yyyy');
-          if (!admExitsMap[month]) admExitsMap[month] = { admissions: 0, exits: 0 };
-          admExitsMap[month].admissions++;
+          try {
+            const parsed = parseISO(c.admission_date);
+            if (isNaN(parsed.getTime())) return;
+            const month = format(parsed, 'MMM yyyy');
+            if (!admExitsMap[month]) admExitsMap[month] = { admissions: 0, exits: 0 };
+            admExitsMap[month].admissions++;
+          } catch {
+            // ignore invalid date
+          }
         });
 
         allExits.forEach(e => {
           if (!e.exit_date) return;
-          const month = format(parseISO(e.exit_date), 'MMM yyyy');
-          if (!admExitsMap[month]) admExitsMap[month] = { admissions: 0, exits: 0 };
-          admExitsMap[month].exits++;
+          try {
+            const parsed = parseISO(e.exit_date);
+            if (isNaN(parsed.getTime())) return;
+            const month = format(parsed, 'MMM yyyy');
+            if (!admExitsMap[month]) admExitsMap[month] = { admissions: 0, exits: 0 };
+            admExitsMap[month].exits++;
+          } catch {
+            // ignore invalid date
+          }
         });
 
         const admissionsExitsData = Object.keys(admExitsMap)
@@ -199,7 +240,7 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
             ...admExitsMap[month]
           }));
 
-        // 5. Placement Types (from aftercare_records)
+        // 5. Placement Types & Status (from aftercare_records and alumni status)
         const placementCounts = allAftercare.reduce((acc: Record<string, number>, record) => {
           const type = record.placement_type?.trim();
           if (!type) return acc;
@@ -209,10 +250,24 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           return acc;
         }, {});
 
+        // Count alumni who are awaiting placement
+        const awaitingPlacementCount = allClients.filter(c => {
+          const status = c.status || "";
+          if (status === "Alumni - Awaiting Placement") return true;
+          if (["Complete", "Alumni", "Graduated"].includes(status)) {
+            return !allAftercare.some(a => a.client_id === c.id);
+          }
+          return false;
+        }).length;
+
+        if (awaitingPlacementCount > 0) {
+          placementCounts["Awaiting Placement"] = awaitingPlacementCount;
+        }
+
         const placementData = Object.keys(placementCounts).map((name, index) => ({
           name,
           value: placementCounts[name],
-          color: COLORS[index % COLORS.length]
+          color: name === "Awaiting Placement" ? "#f59e0b" : COLORS[index % COLORS.length]
         }));
 
         // 6. Nature of Reunification (from home_visits nature_of_reintegration)
@@ -230,6 +285,19 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           color: COLORS[(index + 2) % COLORS.length]
         }));
 
+        // 7. Rescue Area Concentration
+        const rescueAreaCounts: Record<string, number> = {};
+        allStreetVisits.forEach(v => {
+          if (v.street_name) rescueAreaCounts[v.street_name] = (rescueAreaCounts[v.street_name] || 0) + 1;
+        });
+        clientsRes.data?.forEach(c => {
+          if (c.street_name) rescueAreaCounts[c.street_name] = (rescueAreaCounts[c.street_name] || 0) + 1;
+        });
+        const rescueAreaData = Object.keys(rescueAreaCounts)
+          .sort((a, b) => rescueAreaCounts[b] - rescueAreaCounts[a])
+          .slice(0, 10)
+          .map(name => ({ name, value: rescueAreaCounts[name] }));
+
         setStats({
           totalClients,
           activeClients,
@@ -239,12 +307,20 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           admissions,
           exits,
           activePlacements,
+          totalStreetVisits: allStreetVisits.length,
           systemActivityData: displayActivityData,
           demographicsData,
           clientStatusData,
           admissionsExitsData,
           placementData,
-          reunificationData
+          reunificationData,
+          rescueAreaData,
+          programStats: {
+            totalCasePlans: allCasePlans.length,
+            totalAftercareRecords: allAftercare.length,
+            totalMedicalRecords: allMedical.length,
+            totalEducationStudents: allClients.filter(c => c.education_status === "Enrolled" || c.education_status === "Active").length,
+          }
         });
 
       } catch (err: any) {

@@ -123,7 +123,7 @@ const ReintegrationPlans = () => {
 
  return (
  <div className="min-h-screen bg-background w-full">
- <div className="sticky top-14 z-10 shadow-md bg-gradient-primary h-24 flex items-center px-4 sm:px-6 lg:px-8">
+ <div className="sticky top-14 z-10 shadow-md bg-gradient-primary h-24 flex items-center px-4 sm:px-6 lg:px-8 overflow-x-hidden">
  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
  <div className="relative">
  <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Reintegration Plans</h1>
@@ -227,7 +227,7 @@ const ReintegrationPlans = () => {
  return (
  <div
  key={client.id}
- className="flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-accent/50 cursor-pointer transition-colors"
+ className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-lg border border-border hover:bg-accent/50 cursor-pointer transition-colors"
  onClick={() => navigate(`/reintegration-plans/client/${client.id}`)}
  >
  <Avatar className="h-12 w-12 bg-orange-500 text-white">

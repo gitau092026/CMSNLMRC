@@ -271,7 +271,7 @@ const RegisterClient = () => {
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [selectedClientSummary, setSelectedClientSummary] = useState<any>(null);
 
-  const isAllowed = ["admin", "social_work", "education", "counselling", "empowerment"].includes(user?.role || "");
+  const isAllowed = ["admin", "social_work", "education", "counselling", "empowerment", "intern_social_work", "intern_counselling"].includes(user?.role || "");
 
   useEffect(() => {
     if (user && !isAllowed) {
@@ -912,7 +912,7 @@ const RegisterClient = () => {
                           <FormLabel className="text-base font-semibold">Placement Form</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
-                              <SelectTrigger className="w-full md:w-[300px]">
+                              <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select admission type" />
                               </SelectTrigger>
                             </FormControl>

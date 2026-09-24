@@ -175,7 +175,7 @@ export default function Empowerment() {
 
  <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
  {/* Stats Cards */}
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
  <Card className="border-t-4 border-t-blue-500">
  <CardContent className="p-6">
  <div className="flex items-center gap-4">
@@ -249,7 +249,7 @@ export default function Empowerment() {
  onDragEnd={handleActionsDragEnd}
  >
  <SortableContext items={quickActions.map((item) => item.id)} strategy={rectSortingStrategy}>
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
  {quickActions.map((item) => (
  <SortableActionCard key={item.id} item={item} />
  ))}
@@ -275,7 +275,7 @@ export default function Empowerment() {
  onDragEnd={handleCategoriesDragEnd}
  >
  <SortableContext items={categories.map((item) => item.id)} strategy={rectSortingStrategy}>
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
  {categories.map((item) => (
  <SortableCategoryCard key={item.id} item={item} />
  ))}

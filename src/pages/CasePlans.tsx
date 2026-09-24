@@ -216,7 +216,7 @@ const CasePlans = () => {
  };
 
  return (
- <div className="min-h-screen bg-background w-full">
+ <div className="min-h-screen bg-background w-full overflow-x-hidden">
  <div className="sticky top-14 z-10 shadow-md bg-gradient-to-r from-blue-600 to-cyan-600 h-24 flex items-center px-4 sm:px-6 lg:px-8">
  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
  <div className="relative">

@@ -211,7 +211,7 @@ const AddAftercareRecord = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="hover:bg-muted shrink-0 h-8 w-8"
+          className="hover:bg-muted shrink-0 h-10 w-8"
           onClick={() => navigate('/aftercare')}
         >
           <ArrowLeft className="h-4 w-4 text-foreground" />
@@ -239,7 +239,7 @@ const AddAftercareRecord = () => {
                     value={formData.institution_workshop}
                     onChange={(e) => setFormData({ ...formData, institution_workshop: e.target.value })}
                     placeholder="Enter institution or workshop name"
-                    className="h-8 text-sm"
+                    className="h-10 text-sm"
                     required
                   />
                 </div>
@@ -251,7 +251,7 @@ const AddAftercareRecord = () => {
                     value={formData.placement_course}
                     onChange={(e) => setFormData({ ...formData, placement_course: e.target.value })}
                     placeholder="Enter course or class name"
-                    className="h-8 text-sm"
+                    className="h-10 text-sm"
                   />
                 </div>
 
@@ -261,7 +261,7 @@ const AddAftercareRecord = () => {
                     value={formData.placement_type}
                     onValueChange={(value) => setFormData({ ...formData, placement_type: value, placement_type_details: "" })}
                   >
-                    <SelectTrigger className="h-8 text-sm">
+                    <SelectTrigger className="h-10 text-sm">
                       <SelectValue placeholder="Select placement type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -305,7 +305,7 @@ const AddAftercareRecord = () => {
                     value={formData.placement_location}
                     onChange={(e) => setFormData({ ...formData, placement_location: e.target.value })}
                     placeholder="Enter placement location"
-                    className="h-8 text-sm"
+                    className="h-10 text-sm"
                   />
                 </div>
 
@@ -317,7 +317,7 @@ const AddAftercareRecord = () => {
                     value={formData.placement_fees}
                     onChange={(e) => setFormData({ ...formData, placement_fees: e.target.value })}
                     placeholder="Enter fees amount"
-                    className="h-8 text-sm"
+                    className="h-10 text-sm"
                   />
                 </div>
               </div>
@@ -332,7 +332,7 @@ const AddAftercareRecord = () => {
                       value={formData.contact_person}
                       onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
                       placeholder="Enter contact name"
-                      className="h-8 text-sm"
+                      className="h-10 text-sm"
                     />
                   </div>
 
@@ -343,7 +343,7 @@ const AddAftercareRecord = () => {
                       value={formData.contact_phone}
                       onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
                       placeholder="Enter phone"
-                      className="h-8 text-sm"
+                      className="h-10 text-sm"
                     />
                   </div>
                 </div>
@@ -356,7 +356,7 @@ const AddAftercareRecord = () => {
                       type="date"
                       value={formData.placement_date}
                       onChange={(e) => setFormData({ ...formData, placement_date: e.target.value })}
-                      className="h-8 text-sm py-1"
+                      className="h-10 text-sm py-1"
                     />
                   </div>
 
@@ -367,7 +367,7 @@ const AddAftercareRecord = () => {
                       type="date"
                       value={formData.completion_date}
                       onChange={(e) => setFormData({ ...formData, completion_date: e.target.value })}
-                      className="h-8 text-sm py-1"
+                      className="h-10 text-sm py-1"
                     />
                   </div>
                 </div>
@@ -378,7 +378,7 @@ const AddAftercareRecord = () => {
                     value={formData.completion_status}
                     onValueChange={(value) => setFormData({ ...formData, completion_status: value })}
                   >
-                    <SelectTrigger className="h-8 text-sm">
+                    <SelectTrigger className="h-10 text-sm">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -410,14 +410,14 @@ const AddAftercareRecord = () => {
                 type="button"
                 variant="outline"
                 onClick={() => navigate('/aftercare')}
-                className="w-full sm:flex-1 h-8 text-sm"
+                className="w-full sm:flex-1 h-10 text-sm"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full sm:flex-1 h-8 text-sm"
+                className="w-full sm:flex-1 h-10 text-sm"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? "Saving..." : isEditMode ? "Update" : "Save"}

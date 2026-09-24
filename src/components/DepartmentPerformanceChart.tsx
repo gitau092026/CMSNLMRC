@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 
 const data = [
@@ -19,7 +20,7 @@ export function DepartmentPerformanceChart() {
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-card-accent-primary" />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="text-2xl">📊</span>
+          <BarChart3 className="h-6 w-6 text-muted-foreground" />
           Department Performance
         </CardTitle>
         <CardDescription>Key metrics by department</CardDescription>

@@ -285,7 +285,7 @@ const Clients = () => {
  placeholder="Search clients by name, intake, or nickname..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="pl-10 bg-background"
+ className="pl-10 bg-background w-full"
  />
  </div>
 
@@ -475,7 +475,7 @@ const Clients = () => {
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <Select value={bulkStatus} onValueChange={setBulkStatus}>
-            <SelectTrigger className="w-[180px] bg-background border-border">
+            <SelectTrigger className="w-full sm:w-[180px] bg-background border-border">
               <SelectValue placeholder="Choose Status" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border z-50">
@@ -512,7 +512,7 @@ const Clients = () => {
 
  {/* Delete Confirmation Dialog */}
  <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
- <AlertDialogContent>
+ <AlertDialogContent className="w-[95vw] max-w-full sm:max-w-lg">
  <AlertDialogHeader>
  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
  <AlertDialogDescription>

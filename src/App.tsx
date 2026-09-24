@@ -28,6 +28,7 @@ import CasePlans from "./pages/CasePlans";
 import AddCasePlan from "./pages/AddCasePlan";
 import CasePlanDetails from "./pages/CasePlanDetails";
 import AdmissionForm from "./pages/AdmissionForm";
+import SoapNotes from "./pages/SoapNotes";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const App = () => (
                             <Route path="/reintegration-plans/client/:clientId" element={<ClientReintegrationPlans />} />
                             <Route path="/education" element={<Education />} />
                             <Route path="/counselling" element={<Counselling />} />
+                            <Route path="/soap-notes" element={<SoapNotes />} />
                             <Route path="/empowerment" element={<Empowerment />} />
                             <Route path="/users" element={<ManageUsers />} />
                             <Route path="/alumni" element={<Alumni />} />

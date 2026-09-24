@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, StickyNote, FileText, LogOut, Calendar, User, Clock } from "lucide-react";
+import { ArrowLeft, StickyNote, FileText, LogOut, Calendar, User, Clock, Download } from "lucide-react";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -100,6 +102,73 @@ export default function ClientCounsellingRecords({ client, onBack }: ClientCouns
     }
   };
 
+  const handleExportSoapNotePDF = async (note: SoapNote) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    let startY = 20;
+    try {
+      const logoUrl = '/mwangaza_logo.png';
+      const img = new Image();
+      img.src = logoUrl;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject();
+      });
+      if (img.width) {
+        const imgWidth = 30;
+        const imgHeight = (img.height * imgWidth) / img.width;
+        const imgX = (pageWidth - imgWidth) / 2;
+        doc.addImage(img, 'PNG', imgX, 10, imgWidth, imgHeight);
+        startY = 10 + imgHeight + 8;
+      }
+    } catch {
+      console.error("Error adding logo to PDF");
+    }
+    doc.setFontSize(20);
+    doc.setTextColor(40, 40, 40);
+    doc.text("SOAP Note", pageWidth / 2, startY, { align: "center" });
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, startY + 6, { align: "center" });
+    let finalY = startY + 14;
+    const addNoteSection = (label: string, content: string | null, color: [number, number, number]) => {
+      if (!content) return;
+      doc.setFontSize(12);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.setFont("helvetica", "bold");
+      doc.text(label, 14, finalY + 6);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(40, 40, 40);
+      doc.setFontSize(10);
+      const lines = doc.splitTextToSize(content, pageWidth - 28);
+      doc.text(lines, 14, finalY + 14);
+      finalY = finalY + 14 + (lines.length * 5) + 8;
+    };
+    const sessionInfoBody: any[] = [
+      [{ content: 'Client Name', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, client.name],
+      [{ content: 'Counsellor', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.counsellor_name],
+      [{ content: 'Session Date', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.session_date],
+      ...(note.session_time ? [[{ content: 'Session Time', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.session_time]] : []),
+      ...(note.next_session_date ? [[{ content: 'Next Session', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.next_session_date]] : []),
+      ...(note.areas_to_focus ? [[{ content: 'Areas to Focus', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.areas_to_focus]] : []),
+    ];
+
+    autoTable(doc, {
+      startY: finalY,
+      head: [[{ content: 'Session Information', colSpan: 2, styles: { halign: 'left', fillColor: [63, 81, 181], textColor: 255 } }]],
+      body: sessionInfoBody,
+      theme: 'grid',
+      columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 'auto' } },
+    });
+    finalY = (doc as any).lastAutoTable.finalY + 8;
+    addNoteSection('S - SUBJECTIVE', note.subjective, [217, 87, 37]);
+    addNoteSection('O - OBJECTIVE', note.objective, [46, 125, 50]);
+    addNoteSection('A - ASSESSMENT', note.assessment, [63, 81, 181]);
+    addNoteSection('P - PLAN', note.plan, [156, 39, 176]);
+    doc.save(`SOAP_Note_${note.session_date.replace(/\//g, '-')}_${client.name.replace(/\s+/g, '_')}.pdf`);
+    toast({ title: "PDF Exported", description: "SOAP note has been exported to PDF successfully." });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
@@ -190,6 +259,10 @@ export default function ClientCounsellingRecords({ client, onBack }: ClientCouns
                               )}
                             </div>
                             <Badge variant="outline">{note.counsellor_name}</Badge>
+                            <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note)}>
+                              <Download className="h-4 w-4 mr-1" />
+                              Export PDF
+                            </Button>
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
