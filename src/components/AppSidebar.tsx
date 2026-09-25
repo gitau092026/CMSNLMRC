@@ -33,7 +33,7 @@ const navigationItems = [
 ];
 
 const additionalItems = [
-  { title: "Alumni", url: "/alumni", icon: Medal, roles: ["admin", "alumni", "counselling", "intern_social_work", "intern_counselling"] },
+  { title: "Alumni", url: "/alumni", icon: Medal, roles: ["admin", "social_work", "education", "counselling", "empowerment", "aftercare", "alumni", "intern_social_work", "intern_counselling"] },
 ];
 
 export function AppSidebar() {
@@ -187,4 +187,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-
