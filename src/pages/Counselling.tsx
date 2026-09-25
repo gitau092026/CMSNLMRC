@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import ClientCounsellingRecords from "@/components/ClientCounsellingRecords";
+import { setCachedClient, prefetchAvatars, prefetchImage } from "@/lib/clientCache";
 
 interface Client {
   id: string;
@@ -29,6 +30,8 @@ interface Client {
   admission_date: string;
   intake_number: string | null;
   status: string;
+  profile_picture?: string | null;
+  [key: string]: any;
 }
 
 interface ExitFormData {
@@ -149,12 +152,17 @@ export default function Counselling() {
       setLoading(true);
       const { data, error } = await supabase
         .from('clients')
-        .select('id, name, nickname, age, date_of_birth, admission_date, intake_number, status')
+        .select('id, name, nickname, age, date_of_birth, admission_date, intake_number, status, profile_picture')
         .or('status.eq.Active,status.eq.Complete')
         .order('admission_date', { ascending: false });
 
       if (error) throw error;
       setClients(data || []);
+
+      if (data && data.length > 0) {
+        data.forEach((c: any) => setCachedClient(c));
+        prefetchAvatars(data.map((c: any) => c.profile_picture));
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -544,7 +552,8 @@ export default function Counselling() {
                           size="sm" 
                           variant="outline" 
                           className="whitespace-nowrap"
-                          onClick={(e) => { e.stopPropagation(); navigate(`/clients/${client.id}`); }}
+                          onMouseEnter={() => prefetchImage(client.profile_picture)}
+                          onClick={(e) => { e.stopPropagation(); navigate(`/clients/${client.id}`, { state: { client } }); }}
                         >
                           <FolderOpen className="h-4 w-4 mr-1" />
                           Profile
@@ -595,7 +604,7 @@ export default function Counselling() {
                 <div>
                   <Label>DATE</Label>
                   <Input 
-                    type="date"
+                    type="date" 
                     value={soapFormData.session_date}
                     onChange={(e) => handleSoapInputChange("session_date", e.target.value)}
                   />
@@ -603,7 +612,7 @@ export default function Counselling() {
                 <div>
                   <Label>TIME</Label>
                   <Input 
-                    type="time"
+                    type="time" 
                     value={soapFormData.session_time}
                     onChange={(e) => handleSoapInputChange("session_time", e.target.value)}
                   />
@@ -670,7 +679,7 @@ export default function Counselling() {
               <div>
                 <Label className="text-base font-semibold">DATE OF NEXT SESSION</Label>
                 <Input 
-                  type="date"
+                  type="date" 
                   value={soapFormData.next_session_date}
                   onChange={(e) => handleSoapInputChange("next_session_date", e.target.value)}
                   className="max-w-xs"
@@ -1065,7 +1074,7 @@ export default function Counselling() {
                   <div>
                     <Label>Date</Label>
                     <Input 
-                      type="date"
+                      type="date" 
                       value={exitFormData.client_signature_date}
                       onChange={(e) => handleExitInputChange("client_signature_date", e.target.value)}
                     />
@@ -1085,7 +1094,7 @@ export default function Counselling() {
                   <div>
                     <Label>Date</Label>
                     <Input 
-                      type="date"
+                      type="date" 
                       value={exitFormData.receiving_adult_signature_date}
                       onChange={(e) => handleExitInputChange("receiving_adult_signature_date", e.target.value)}
                     />
@@ -1105,7 +1114,7 @@ export default function Counselling() {
                   <div>
                     <Label>Date</Label>
                     <Input 
-                      type="date"
+                      type="date" 
                       value={exitFormData.counsellor_signature_date}
                       onChange={(e) => handleExitInputChange("counsellor_signature_date", e.target.value)}
                     />
@@ -1125,7 +1134,7 @@ export default function Counselling() {
                   <div>
                     <Label>Date</Label>
                     <Input 
-                      type="date"
+                      type="date" 
                       value={exitFormData.hors_signature_date}
                       onChange={(e) => handleExitInputChange("hors_signature_date", e.target.value)}
                     />
