@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Users, Home, Calendar, TrendingUp, Medal, Activity, ArrowUpRight, ChevronDown, Briefcase, Heart, MessageCircle, GraduationCap, Shield, Stethoscope } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDashboardStats, DateRangeFilter } from "@/hooks/useDashboardStats";
@@ -19,6 +20,7 @@ const LABEL_MAP: Record<DateRangeFilter, string> = {
 };
 
 const Index = () => {
+  const navigate = useNavigate();
   const [dateRange, setDateRange] = useState<DateRangeFilter>("all");
   const { stats, loading } = useDashboardStats(dateRange);
 
@@ -29,6 +31,7 @@ const Index = () => {
       sub: `${stats?.activeClients ?? 0} active cases`,
       icon: Users,
       accent: "text-indigo-600 bg-indigo-50 border-indigo-100",
+      url: "/clients",
     },
     {
       label: "Field Interventions",
@@ -45,6 +48,7 @@ const Index = () => {
       sub: "Graduates",
       icon: Medal,
       accent: "text-emerald-600 bg-emerald-50 border-emerald-100",
+      url: "/alumni",
     },
     {
       label: "Placement Progress",
@@ -52,6 +56,7 @@ const Index = () => {
       sub: "Active in-progress placements",
       icon: Briefcase,
       accent: "text-cyan-600 bg-cyan-50 border-cyan-100",
+      url: "/aftercare",
     },
   ];
 
@@ -140,7 +145,8 @@ const Index = () => {
             {kpiCards.map((card) => (
               <div
                 key={card.label}
-                className="bg-white/10 backdrop-blur border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 flex flex-col gap-2 sm:gap-3 relative overflow-hidden hover:bg-white/15 transition-all duration-200"
+                onClick={() => (card as any).url && navigate((card as any).url)}
+                className={`bg-white/10 backdrop-blur border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 flex flex-col gap-2 sm:gap-3 relative overflow-hidden transition-all duration-200 ${(card as any).url ? 'cursor-pointer hover:bg-white/20 hover:scale-[1.02]' : 'hover:bg-white/15'}`}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
                 <div className="relative flex items-start justify-between">

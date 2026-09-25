@@ -7,6 +7,8 @@ import { User, Save, ArrowLeft, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { compressImage } from "@/utils/imageCompression";
+import { setCachedClient } from "@/lib/clientCache";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage
 } from "@/components/ui/form";
@@ -72,13 +74,20 @@ const AdmissionForm = () => {
     return age >= 0 ? age.toString() : "";
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setProfilePreview(reader.result as string);
-      reader.readAsDataURL(file);
+      try {
+        const { blob, dataUrl } = await compressImage(file, { maxWidth: 500, maxHeight: 500, quality: 0.85 });
+        setProfilePreview(dataUrl);
+        const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: "image/jpeg" });
+        setSelectedFile(compressedFile);
+      } catch {
+        setSelectedFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setProfilePreview(reader.result as string);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -125,12 +134,16 @@ const AdmissionForm = () => {
       // Upload profile picture if provided
       if (selectedFile) {
         try {
-          const fileExt = selectedFile.name.split(".").pop();
+          const fileExt = selectedFile.name.split(".").pop() || "jpg";
           const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
           const filePath = `${fileName}`;
           const { error: uploadError } = await supabase.storage
             .from("client-photos")
-            .upload(filePath, selectedFile);
+            .upload(filePath, selectedFile, {
+              contentType: selectedFile.type || "image/jpeg",
+              cacheControl: "31536000",
+              upsert: true
+            });
 
           if (!uploadError) {
             const { data: { publicUrl } } = supabase.storage
@@ -177,7 +190,9 @@ const AdmissionForm = () => {
       });
 
       if (data?.id) {
-        navigate(`/clients/${data.id}`);
+        const fullClient = { ...clientData, id: data.id };
+        setCachedClient(fullClient);
+        navigate(`/clients/${data.id}`, { state: { client: fullClient } });
       } else {
         navigate("/clients");
       }

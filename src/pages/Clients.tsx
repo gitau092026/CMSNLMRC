@@ -4,6 +4,8 @@ import { Users, UserCheck, GraduationCap, MapPin, Search, Edit, Eye, Trash2 } fr
 import { supabase } from"@/integrations/supabase/client";
 import { useToast } from"@/hooks/use-toast";
 import { useAuth } from"@/contexts/AuthContext";
+import { setCachedClient, prefetchAvatars, prefetchImage } from "@/lib/clientCache";
+import { cn } from "@/lib/utils";
 import { Input } from"@/components/ui/input";
 import { Button } from"@/components/ui/button";
 import {
@@ -30,11 +32,13 @@ import {
 } from"@/components/ui/alert-dialog";
 
 interface Client {
- id: string;
- name: string;
- client_id: string;
- status: string;
- notes: string;
+  id: string;
+  name: string;
+  client_id: string;
+  status: string;
+  notes: string;
+  profile_picture?: string | null;
+  [key: string]: any;
 }
 
 const Clients = () => {
@@ -88,16 +92,19 @@ const Clients = () => {
 
  if (error) throw error;
 
- // Only show Active clients — all others are handled in their respective pages
- const activeClients = (data || []).filter(c => c.status === 'Active');
+ if (data && data.length > 0) {
+ data.forEach((c: any) => setCachedClient(c));
+ prefetchAvatars(data.map((c: any) => c.profile_picture));
+ }
 
- setClients(activeClients);
+ // Set all clients so users can view and filter alumni and other categories
+ setClients(data || []);
 
  // Calculate stats
- const total = activeClients.length;
- const active = total;
- const graduated = 0;
- const street = 0;
+ const total = (data || []).length;
+ const active = (data || []).filter(c => c.status === 'Active').length;
+ const graduated = (data || []).filter(c => ['complete', 'graduated', 'alumni', 'alumni - placed', 'alumni - awaiting placement'].includes((c.status || '').toLowerCase())).length;
+ const street = (data || []).filter(c => ['street', 'escape'].includes((c.status || '').toLowerCase())).length;
 
  setStats({ total, active, graduated, street });
  } catch (error: any) {
@@ -203,10 +210,15 @@ const Clients = () => {
  } catch { return"Pending"; }
  };
 
+ const isAlumniStatus = (s: string) => ['complete', 'graduated', 'alumni', 'alumni - placed', 'alumni - awaiting placement'].includes((s || '').toLowerCase());
+
  const filteredClients = clients.filter(client => {
  const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
  client.client_id.toLowerCase().includes(searchQuery.toLowerCase());
- const matchesStatus = statusFilter ==="all" || client.status?.toLowerCase() === statusFilter.toLowerCase();
+ const matchesStatus =
+   statusFilter === "all" ||
+   (statusFilter === "all-alumni" && isAlumniStatus(client.status)) ||
+   client.status?.toLowerCase() === statusFilter.toLowerCase();
 
  // Assessment Filter
  const assessmentStatus = getAssessmentStatus(client.notes);
@@ -226,7 +238,7 @@ const Clients = () => {
  <div className="p-4 sm:p-6 lg:p-8 space-y-6">
  {/* Stats Cards */}
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
- <Card className="border-border">
+ <Card onClick={() => setStatusFilter('all')} className={cn("border-border cursor-pointer hover:border-primary/50 transition-all", statusFilter === 'all' && "ring-2 ring-primary")}>
  <CardContent className="p-4 flex items-center gap-3">
  <div className="p-2 rounded-lg bg-purple-600">
  <Users className="h-5 w-5 text-white" />
@@ -238,7 +250,7 @@ const Clients = () => {
  </CardContent>
  </Card>
 
- <Card className="border-border">
+ <Card onClick={() => setStatusFilter(statusFilter === 'Active' ? 'all' : 'Active')} className={cn("border-border cursor-pointer hover:border-primary/50 transition-all", statusFilter === 'Active' && "ring-2 ring-success")}>
  <CardContent className="p-4 flex items-center gap-3">
  <div className="p-2 rounded-lg bg-success">
  <UserCheck className="h-5 w-5 text-white" />
@@ -250,19 +262,19 @@ const Clients = () => {
  </CardContent>
  </Card>
 
- <Card className="border-border">
+ <Card onClick={() => setStatusFilter(statusFilter === 'all-alumni' ? 'all' : 'all-alumni')} className={cn("border-border cursor-pointer hover:border-primary/50 transition-all", statusFilter === 'all-alumni' && "ring-2 ring-orange-500")}>
  <CardContent className="p-4 flex items-center gap-3">
- <div className="p-2 rounded-lg bg-primary">
+ <div className="p-2 rounded-lg bg-orange-500">
  <GraduationCap className="h-5 w-5 text-white" />
  </div>
  <div>
  <p className="text-2xl font-bold text-foreground">{stats.graduated}</p>
- <p className="text-xs text-muted-foreground uppercase">Graduated</p>
+ <p className="text-xs text-muted-foreground uppercase">Alumni / Graduated</p>
  </div>
  </CardContent>
  </Card>
 
- <Card className="border-border">
+ <Card onClick={() => setStatusFilter(statusFilter === 'Street' ? 'all' : 'Street')} className={cn("border-border cursor-pointer hover:border-primary/50 transition-all", statusFilter === 'Street' && "ring-2 ring-blue-600")}>
  <CardContent className="p-4 flex items-center gap-3">
  <div className="p-2 rounded-lg bg-blue-600">
  <MapPin className="h-5 w-5 text-white" />
@@ -295,8 +307,9 @@ const Clients = () => {
  </SelectTrigger>
  <SelectContent className="bg-popover border-border z-50">
  <SelectItem value="all">All Status</SelectItem>
+ <SelectItem value="all-alumni">All Alumni / Graduated</SelectItem>
  <SelectItem value="Active">Active</SelectItem>
- <SelectItem value="Complete">Complete</SelectItem>
+ <SelectItem value="Complete">Complete (Alumni)</SelectItem>
  <SelectItem value="Alumni - Awaiting Placement">Alumni - Awaiting Placement</SelectItem>
  <SelectItem value="Alumni - Placed">Alumni - Placed</SelectItem>
  <SelectItem value="Graduated">Graduated</SelectItem>
@@ -434,7 +447,8 @@ const Clients = () => {
  <Button
  size="sm"
  variant="outline"
- onClick={() => navigate(`/clients/${client.id}`)}
+ onMouseEnter={() => prefetchImage(client.profile_picture)}
+ onClick={() => navigate(`/clients/${client.id}`, { state: { client } })}
  >
  <Eye className="h-4 w-4 mr-1" />
  View

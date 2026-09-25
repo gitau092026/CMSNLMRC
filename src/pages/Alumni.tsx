@@ -56,21 +56,31 @@ import { supabase } from"@/integrations/supabase/client";
 import { useToast } from"@/hooks/use-toast";
 import { useAuth } from"@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { setCachedClient, prefetchAvatars, prefetchImage } from "@/lib/clientCache";
 
 interface AftercareRecord {
  id: string;
  institution_workshop: string;
  completion_status: string;
+ [key: string]: any;
 }
 
 interface AlumniClient {
  id: string;
  name: string;
+ client_id?: string | null;
+ profile_picture?: string | null;
  status: string;
  contact: string | null;
  address: string | null;
+ date_of_birth?: string | null;
+ age?: number | null;
+ gender?: string | null;
+ notes?: string | null;
+ created_at?: string | null;
  exit_date?: string;
  aftercare_records?: AftercareRecord[];
+ [key: string]: any;
 }
 
 
@@ -100,13 +110,19 @@ export default function Alumni() {
  const { data: clientsData, error: clientsError } = await supabase
  .from('clients')
  .select(`
- id, name, status, contact, address,
- aftercare_records (id, institution_workshop, completion_status)
+ id, name, client_id, profile_picture, status, contact, address,
+ date_of_birth, age, gender, notes, created_at,
+ aftercare_records (*)
  `)
  .in('status', ['Alumni - Awaiting Placement', 'Alumni - Placed', 'Complete', 'Alumni', 'Graduated'])
  .order('name', { ascending: true });
 
  if (clientsError) throw clientsError;
+
+ if (clientsData && clientsData.length > 0) {
+ clientsData.forEach((c: any) => setCachedClient(c));
+ prefetchAvatars(clientsData.map((c: any) => c.profile_picture));
+ }
 
  // Fetch exit records for alumni to get exit dates
  if (clientsData && clientsData.length > 0) {
@@ -149,13 +165,16 @@ export default function Alumni() {
  const { data: refreshedData, error: refreshError } = await supabase
  .from('clients')
  .select(`
- id, name, status, contact, address,
- aftercare_records (id, institution_workshop, completion_status)
+ id, name, client_id, profile_picture, status, contact, address,
+ date_of_birth, age, gender, notes, created_at,
+ aftercare_records (*)
  `)
  .in('status', ['Alumni - Awaiting Placement', 'Alumni - Placed', 'Complete', 'Alumni', 'Graduated'])
  .order('name', { ascending: true });
 
  if (!refreshError && refreshedData) {
+ refreshedData.forEach((c: any) => setCachedClient(c));
+ prefetchAvatars(refreshedData.map((c: any) => c.profile_picture));
  setAlumni(refreshedData);
  } else {
  setAlumni(clientsData);
@@ -375,15 +394,34 @@ export default function Alumni() {
  filteredAlumni.map((person, index) => (
  <TableRow key={person.id}>
  <TableCell>
- <div className="flex items-center gap-3">
- <Avatar className={getAvatarColor(index)}>
- <AvatarFallback className={`${getAvatarColor(index)} text-white font-semibold`}>
- {getInitials(person.name)}
- </AvatarFallback>
- </Avatar>
- <div>
- <p className="font-medium">{person.name}</p>
- </div>
+ <div
+   className="flex items-center gap-3 cursor-pointer group"
+   onMouseEnter={() => prefetchImage(person.profile_picture)}
+   onClick={() => navigate(`/clients/${person.id}`, { state: { client: person } })}
+   title="Click to view alumni profile"
+ >
+   {person.profile_picture ? (
+     <img
+       src={person.profile_picture}
+       alt={person.name}
+       className="h-10 w-10 rounded-full object-cover border border-primary/20 shadow-sm shrink-0"
+       loading="eager"
+     />
+   ) : (
+     <Avatar className={cn(getAvatarColor(index), "h-10 w-10 shrink-0")}>
+       <AvatarFallback className={`${getAvatarColor(index)} text-white font-semibold`}>
+         {getInitials(person.name)}
+       </AvatarFallback>
+     </Avatar>
+   )}
+   <div>
+     <p className="font-medium group-hover:text-primary transition-colors flex items-center gap-1.5">
+       {person.name}
+       {person.client_id && (
+         <span className="text-xs text-muted-foreground font-normal">({person.client_id})</span>
+       )}
+     </p>
+   </div>
  </div>
  </TableCell>
  <TableCell>
@@ -408,7 +446,17 @@ export default function Alumni() {
  </div>
  </TableCell>
  <TableCell>
- <div className="flex gap-2 flex-wrap">
+ <div className="flex gap-2 flex-wrap items-center">
+ <Button
+ size="sm"
+ variant="outline"
+ className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary font-medium"
+ onMouseEnter={() => prefetchImage(person.profile_picture)}
+ onClick={() => navigate(`/clients/${person.id}`, { state: { client: person } })}
+ >
+ <Eye className="h-4 w-4 mr-1.5" />
+ View Profile
+ </Button>
 
  {person.aftercare_records && person.aftercare_records.length > 0 ? (
  <>

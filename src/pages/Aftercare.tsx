@@ -7,6 +7,7 @@ import { Badge } from"@/components/ui/badge";
 import { Button } from"@/components/ui/button";
 import { supabase } from"@/integrations/supabase/client";
 import { useToast } from"@/hooks/use-toast";
+import { setCachedClient, prefetchAvatars, prefetchImage } from "@/lib/clientCache";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from"@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from"@/components/ui/alert-dialog";
 import { useAuth } from"@/contexts/AuthContext";
@@ -30,9 +31,12 @@ interface AftercareRecord {
 interface ClientWithAftercare {
  id: string;
  name: string;
+ client_id?: string | null;
+ profile_picture?: string | null;
  status: string;
  contact: string;
  aftercare_records: AftercareRecord[];
+ [key: string]: any;
 }
 
 const statusColors: Record<string, string> = {
@@ -98,6 +102,8 @@ const Aftercare = () => {
  .select(`
  id,
  name,
+ client_id,
+ profile_picture,
  status,
  contact,
  aftercare_records (
@@ -120,6 +126,11 @@ const Aftercare = () => {
  .order('name', { ascending: true });
 
  if (error) throw error;
+
+ if (data && data.length > 0) {
+ data.forEach((c: any) => setCachedClient(c));
+ prefetchAvatars(data.map((c: any) => c.profile_picture));
+ }
 
  const awaitingPlacement = data?.filter(c => c.status === 'Alumni - Awaiting Placement' || c.status === 'Complete') || [];
  const graduated = data?.filter(c => c.status === 'Graduated') || [];
@@ -349,7 +360,8 @@ const Aftercare = () => {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => navigate(`/clients/${client.id}`)}
+                    onMouseEnter={() => prefetchImage(client.profile_picture)}
+                    onClick={() => navigate(`/clients/${client.id}`, { state: { client } })}
                   >
                     Profile
                   </Button>
