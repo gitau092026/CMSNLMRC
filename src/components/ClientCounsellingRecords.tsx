@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, StickyNote, FileText, LogOut, Calendar, User, Clock, Download } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { drawPDFHeader } from "@/utils/pdfHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -21,6 +22,7 @@ interface Client {
   admission_date: string;
   intake_number: string | null;
   status: string;
+  profile_picture?: string | null;
 }
 
 interface SoapNote {
@@ -105,32 +107,16 @@ export default function ClientCounsellingRecords({ client, onBack }: ClientCouns
   const handleExportSoapNotePDF = async (note: SoapNote) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
-    let startY = 20;
-    try {
-      const logoUrl = '/mwangaza_logo.png';
-      const img = new Image();
-      img.src = logoUrl;
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject();
-      });
-      if (img.width) {
-        const imgWidth = 30;
-        const imgHeight = (img.height * imgWidth) / img.width;
-        const imgX = (pageWidth - imgWidth) / 2;
-        doc.addImage(img, 'PNG', imgX, 10, imgWidth, imgHeight);
-        startY = 10 + imgHeight + 8;
-      }
-    } catch {
-      console.error("Error adding logo to PDF");
-    }
-    doc.setFontSize(20);
-    doc.setTextColor(40, 40, 40);
-    doc.text("SOAP Note", pageWidth / 2, startY, { align: "center" });
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, startY + 6, { align: "center" });
-    let finalY = startY + 14;
+    const headerBottomY = await drawPDFHeader({
+      doc,
+      title: "SOAP Note",
+      clientName: client.name,
+      clientId: client.intake_number || undefined,
+      clientStatus: client.status,
+      profilePictureUrl: client.profile_picture,
+      dateText: `Session Date: ${note.session_date}`,
+    });
+    let finalY = headerBottomY + 6;
     const addNoteSection = (label: string, content: string | null, color: [number, number, number]) => {
       if (!content) return;
       doc.setFontSize(12);

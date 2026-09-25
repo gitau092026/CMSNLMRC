@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { FileText, StickyNote, LogOut, FolderOpen, Calendar, User, UserPlus, Download, Clock } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { drawPDFHeader } from "@/utils/pdfHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -361,35 +362,18 @@ export default function Counselling() {
   };
 
   // Export single SOAP note to PDF
-  const handleExportSoapNotePDF = async (note: any, clientName: string) => {
+  const handleExportSoapNotePDF = async (note: any, client: Client | null) => {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    let startY = 20;
-    try {
-      const logoUrl = '/mwangaza_logo.png';
-      const img = new Image();
-      img.src = logoUrl;
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject();
-      });
-      if (img.width) {
-        const imgWidth = 30;
-        const imgHeight = (img.height * imgWidth) / img.width;
-        const imgX = (pageWidth - imgWidth) / 2;
-        doc.addImage(img, 'PNG', imgX, 10, imgWidth, imgHeight);
-        startY = 10 + imgHeight + 8;
-      }
-    } catch {
-      console.error("Error adding logo to PDF");
-    }
-    doc.setFontSize(20);
-    doc.setTextColor(40, 40, 40);
-    doc.text("SOAP Note", pageWidth / 2, startY, { align: "center" });
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, startY + 6, { align: "center" });
-    let finalY = startY + 14;
+    const headerBottomY = await drawPDFHeader({
+      doc,
+      title: "SOAP Note",
+      clientName: client?.name,
+      clientId: client?.intake_number || undefined,
+      clientStatus: client?.status,
+      profilePictureUrl: client?.profile_picture,
+      dateText: `Session Date: ${note.session_date}`,
+    });
+    let finalY = headerBottomY + 6;
     autoTable(doc, {
       startY: finalY,
       head: [[{ content: 'Session Information', colSpan: 2, styles: { halign: 'left', fillColor: [63, 81, 181], textColor: 255 } }]],
@@ -751,7 +735,7 @@ export default function Counselling() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">{note.counsellor_name}</Badge>
-                          <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note, viewSoapClient?.name || "")}>
+                          <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note, viewSoapClient)}>
                             <Download className="h-4 w-4 mr-1" />
                             Export PDF
                           </Button>

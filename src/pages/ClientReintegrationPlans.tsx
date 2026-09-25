@@ -4,6 +4,7 @@ import { supabase } from"@/integrations/supabase/client";
 import { MapPin, Edit, Trash2, ArrowLeft, FileText, Download } from"lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { drawPDFHeader } from "@/utils/pdfHeader";
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
 import { Button } from"@/components/ui/button";
 import { Badge } from"@/components/ui/badge";
@@ -80,41 +81,23 @@ const ClientReintegrationPlans = () => {
  };
 
  const handleExportPDF = async (singleVisit?: any) => {
- const doc = new jsPDF();
+   try {
+     const doc = new jsPDF();
 
  // Determine which visits to export
  // Check if singleVisit is a valid visit object (has id), otherwise export all
  const visitsToExport = (singleVisit && singleVisit.visit_date) ? [singleVisit] : homeVisits;
 
- // Load logo
-
- // Load logo
- try {
- const logoUrl = '/mwangaza_logo.png';
- const response = await fetch(logoUrl);
- const blob = await response.blob();
- const logoBase64 = await new Promise((resolve) => {
- const reader = new FileReader();
- reader.onloadend = () => resolve(reader.result);
- reader.readAsDataURL(blob);
+ const headerBottomY = await drawPDFHeader({
+   doc,
+   title: "Reintegration Plans Report",
+   clientName: client?.name,
+   clientId: client?.client_id,
+   clientStatus: client?.status,
+   profilePictureUrl: client?.profile_picture,
  });
 
- // Add Logo (Left aligned)
- doc.addImage(logoBase64 as string, 'PNG', 14, 10, 30, 30);
-
- // Header Text (Right of logo)
- doc.setFontSize(22);
- doc.setTextColor(249, 115, 22); // Orange primary
- doc.text("Reintegration Plans Report", 50, 25);
-
- // Client Info
- doc.setFontSize(12);
- doc.setTextColor(0, 0, 0);
- doc.text(`Client Name: ${client?.name || 'Unknown'}`, 50, 35);
- doc.text(`Client ID: ${client?.client_id || 'N/A'}`, 120, 35);
- doc.text(`Generated: ${new Date().toLocaleDateString()}`, 50, 42);
-
- let yPos = 50;
+ let yPos = headerBottomY + 8;
 
  visitsToExport.forEach((visit) => {
  // Check for page break

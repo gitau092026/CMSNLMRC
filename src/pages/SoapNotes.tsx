@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, User, Download, Search, Clock, StickyNote } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { drawPDFHeader } from "@/utils/pdfHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +19,7 @@ interface Client {
   age: number;
   admission_date: string;
   status: string;
+  profile_picture?: string | null;
 }
 
 interface SoapNote {
@@ -74,7 +76,7 @@ export default function SoapNotes() {
       // Fetch client details for those IDs
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
-        .select('id, name, nickname, age, admission_date, status')
+        .select('id, name, nickname, age, admission_date, status, profile_picture')
         .in('id', clientIds);
 
       if (clientsError) throw clientsError;
@@ -110,37 +112,19 @@ export default function SoapNotes() {
     }
   };
 
-  const handleExportSoapNotePDF = async (note: SoapNote, clientName: string) => {
+  const handleExportSoapNotePDF = async (note: SoapNote, client: ClientWithNotes | null) => {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    let startY = 20;
-    try {
-      const logoUrl = '/mwangaza_logo.png';
-      const img = new Image();
-      img.src = logoUrl;
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject();
-      });
-      if (img.width) {
-        const imgWidth = 30;
-        const imgHeight = (img.height * imgWidth) / img.width;
-        const imgX = (pageWidth - imgWidth) / 2;
-        doc.addImage(img, 'PNG', imgX, 10, imgWidth, imgHeight);
-        startY = 10 + imgHeight + 8;
-      }
-    } catch {
-      console.error("Error adding logo to PDF");
-    }
-    doc.setFontSize(20);
-    doc.setTextColor(40, 40, 40);
-    doc.text("SOAP Note", pageWidth / 2, startY, { align: "center" });
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, startY + 6, { align: "center" });
-    let finalY = startY + 14;
+    const headerBottomY = await drawPDFHeader({
+      doc,
+      title: "SOAP Note",
+      clientName: client?.name,
+      clientStatus: client?.status,
+      profilePictureUrl: client?.profile_picture,
+      dateText: `Session Date: ${note.session_date}`,
+    });
+    let finalY = headerBottomY + 6;
     const sessionInfoBody: any[] = [
-      [{ content: 'Client Name', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, clientName],
+      [{ content: 'Client Name', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, client?.name || ''],
       [{ content: 'Counsellor', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.counsellor_name],
       [{ content: 'Session Date', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.session_date],
       ...(note.session_time ? [[{ content: 'Session Time', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.session_time]] : []),
@@ -313,7 +297,7 @@ export default function SoapNotes() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">{note.counsellor_name}</Badge>
-                          <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note, selectedClient?.name || "")}>
+                          <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note, selectedClient)}>
                             <Download className="h-4 w-4 mr-1" />
                             Export PDF
                           </Button>

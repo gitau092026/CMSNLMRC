@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Save, ArrowLeft, ClipboardList } from "lucide-react";
+import { User, Save, ArrowLeft, ClipboardList, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const admissionSchema = z.object({
   // Client's Information
   firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  lastName: z.string().optional().default(""),
   nickname: z.string().optional(),
   dateOfBirth: z.string().optional(),
   placeOfBirth: z.string().optional(),
@@ -43,9 +43,15 @@ type AdmissionFormValues = z.infer<typeof admissionSchema>;
 
 const AdmissionForm = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const clientId = searchParams.get("clientId");
+  const isEditMode = searchParams.get("mode") === "edit" || Boolean(clientId);
+
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [fetchingClient, setFetchingClient] = useState(Boolean(clientId));
+  const [existingClient, setExistingClient] = useState<any>(null);
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -54,6 +60,7 @@ const AdmissionForm = () => {
     "social_work",
     "education",
     "counselling",
+    "counsellor",
     "empowerment",
     "intern_social_work",
     "intern_counselling"
@@ -113,6 +120,71 @@ const AdmissionForm = () => {
     },
   });
 
+  useEffect(() => {
+    if (clientId) {
+      const loadClient = async () => {
+        try {
+          setFetchingClient(true);
+          const { data, error } = await supabase
+            .from("clients")
+            .select("*")
+            .eq("id", clientId)
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            setExistingClient(data);
+            let notesObj: any = {};
+            try {
+              notesObj = typeof data.notes === "string" ? JSON.parse(data.notes) : (data.notes || {});
+            } catch {
+              notesObj = {};
+            }
+            const assessmentFields = notesObj.assessmentData || {};
+            const parts = (data.name || "").trim().split(/\s+/);
+            const firstName = parts[0] || "";
+            const lastName = parts.slice(1).join(" ") || "";
+
+            form.reset({
+              firstName,
+              lastName,
+              nickname: data.nickname || "",
+              dateOfBirth: data.date_of_birth || "",
+              placeOfBirth: notesObj.placeOfBirth || assessmentFields.placeOfBirth || "",
+              healthCondition: notesObj.healthCondition || assessmentFields.healthCondition || "",
+              religion: notesObj.religion || assessmentFields.religion || "",
+              ethnicCommunity: notesObj.ethnicCommunity || assessmentFields.ethnicCommunity || assessmentFields.ethnicity || "",
+              hobbies: notesObj.hobbies || assessmentFields.hobbies || "",
+              gender: data.gender || "",
+              intakeNumber: data.intake_number || data.client_id || "",
+              admissionDate: data.admission_date || "",
+              typeOfEntry: data.admission_type || "",
+              policeOBNumber: data.police_ob_number || "",
+              drugsAbused: notesObj.drugsAbused || assessmentFields.drugsAbused || "",
+              clientStatus: data.status || "Active",
+            });
+
+            if (data.profile_picture) {
+              setProfilePreview(data.profile_picture);
+            }
+          }
+        } catch (err: any) {
+          console.error("Error loading client for edit:", err);
+          toast({
+            title: "Error Loading Client",
+            description: err.message || "Failed to load client details for editing.",
+            variant: "destructive",
+          });
+        } finally {
+          setFetchingClient(false);
+        }
+      };
+
+      loadClient();
+    }
+  }, [clientId, form]);
+
   const watchedDOB = form.watch("dateOfBirth");
   const calculatedAge = watchedDOB ? calculateAge(watchedDOB) : "";
 
@@ -120,7 +192,7 @@ const AdmissionForm = () => {
     if (!isAllowed) {
       toast({
         title: "Permission Denied",
-        description: "You do not have permission to admit clients.",
+        description: "You do not have permission to admit or edit clients.",
         variant: "destructive"
       });
       return;
@@ -156,17 +228,36 @@ const AdmissionForm = () => {
         }
       }
 
+      let existingNotes: any = {};
+      try {
+        existingNotes = typeof existingClient?.notes === "string" ? JSON.parse(existingClient.notes) : (existingClient?.notes || {});
+      } catch {
+        existingNotes = {};
+      }
+
       const notesPayload = {
+        ...existingNotes,
         placeOfBirth: values.placeOfBirth || null,
         healthCondition: values.healthCondition || null,
         religion: values.religion || null,
         ethnicCommunity: values.ethnicCommunity || null,
         hobbies: values.hobbies || null,
         drugsAbused: values.drugsAbused || null,
+        ...(existingNotes.assessmentData ? {
+          assessmentData: {
+            ...existingNotes.assessmentData,
+            placeOfBirth: values.placeOfBirth || null,
+            healthCondition: values.healthCondition || null,
+            religion: values.religion || null,
+            ethnicCommunity: values.ethnicCommunity || null,
+            hobbies: values.hobbies || null,
+            drugsAbused: values.drugsAbused || null,
+          }
+        } : {})
       };
 
       const clientData = {
-        name: `${values.firstName} ${values.lastName}`.trim(),
+        name: `${values.firstName} ${values.lastName || ''}`.trim(),
         nickname: values.nickname || null,
         profile_picture: profilePictureUrl,
         client_id: values.intakeNumber,
@@ -181,25 +272,43 @@ const AdmissionForm = () => {
         notes: JSON.stringify(notesPayload),
       };
 
-      const { data, error } = await supabase.from("clients").insert([clientData]).select().single();
-      if (error) throw error;
+      if (isEditMode && clientId) {
+        const { error } = await supabase
+          .from("clients")
+          .update(clientData)
+          .eq("id", clientId);
+        if (error) throw error;
 
-      toast({
-        title: "Admission Successful",
-        description: `${values.firstName} ${values.lastName} has been admitted.`
-      });
-
-      if (data?.id) {
-        const fullClient = { ...clientData, id: data.id };
+        const fullClient = { ...(existingClient || {}), ...clientData, id: clientId };
         setCachedClient(fullClient);
-        navigate(`/clients/${data.id}`, { state: { client: fullClient } });
+
+        toast({
+          title: "Admission Details Updated",
+          description: `${clientData.name}'s admission details have been updated successfully.`,
+        });
+
+        navigate(`/clients/${clientId}`, { state: { client: fullClient } });
       } else {
-        navigate("/clients");
+        const { data, error } = await supabase.from("clients").insert([clientData]).select().single();
+        if (error) throw error;
+
+        toast({
+          title: "Admission Successful",
+          description: `${clientData.name} has been admitted.`
+        });
+
+        if (data?.id) {
+          const fullClient = { ...clientData, id: data.id };
+          setCachedClient(fullClient);
+          navigate(`/clients/${data.id}`, { state: { client: fullClient } });
+        } else {
+          navigate("/clients");
+        }
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to admit client.",
+        description: error.message || "Failed to save client admission details.",
         variant: "destructive"
       });
     } finally {
@@ -214,10 +323,12 @@ const AdmissionForm = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
         <div className="relative flex items-center gap-2">
           <ClipboardList className="h-5 w-5 text-white" />
-          <h1 className="text-lg font-bold text-white">Client Admission Form</h1>
+          <h1 className="text-lg font-bold text-white">
+            {isEditMode ? "Edit Client Admission Details" : "Client Admission Form"}
+          </h1>
         </div>
         <div className="relative text-emerald-100 text-xs font-medium hidden sm:block">
-          ADMISSION & INTAKE
+          {isEditMode && existingClient ? `EDITING: ${existingClient.name}` : "ADMISSION & INTAKE"}
         </div>
       </div>
 
@@ -225,11 +336,18 @@ const AdmissionForm = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/clients")}
+          onClick={() => isEditMode && clientId ? navigate(`/clients/${clientId}`) : navigate("/clients")}
           className="text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Clients
+          <ArrowLeft className="mr-2 h-4 w-4" /> {isEditMode && clientId ? "Back to Client Details" : "Back to Clients"}
         </Button>
+
+        {fetchingClient && (
+          <div className="flex items-center justify-center p-12 bg-card rounded-xl border">
+            <Loader2 className="h-6 w-6 animate-spin text-emerald-600 mr-2" />
+            <span className="text-sm font-medium text-muted-foreground">Loading client admission details...</span>
+          </div>
+        )}
 
         {!isAllowed && (
           <div className="rounded-md bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive">
@@ -557,7 +675,7 @@ const AdmissionForm = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate("/clients")}
+                onClick={() => isEditMode && clientId ? navigate(`/clients/${clientId}`) : navigate("/clients")}
                 disabled={loading}
                 className="h-10 px-5 rounded-lg"
               >
@@ -568,7 +686,7 @@ const AdmissionForm = () => {
                 disabled={loading || !isAllowed}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-6 rounded-lg min-w-[160px]"
               >
-                <Save className="mr-2 h-4 w-4" /> {loading ? "Saving..." : "Submit Admission"}
+                <Save className="mr-2 h-4 w-4" /> {loading ? "Saving..." : (isEditMode ? "Save Changes" : "Submit Admission")}
               </Button>
             </div>
           </form>

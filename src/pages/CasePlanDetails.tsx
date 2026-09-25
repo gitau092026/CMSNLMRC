@@ -9,6 +9,7 @@ import { Separator } from"@/components/ui/separator";
 import { ArrowLeft, Download, FileText, CheckCircle2, Clock, Calendar, User, Shield, Heart, Activity, Users, DollarSign, GraduationCap } from"lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { drawPDFHeader } from "@/utils/pdfHeader";
 
 const CasePlanDetails = () => {
  const { id } = useParams();
@@ -64,32 +65,16 @@ const CasePlanDetails = () => {
  try {
  const doc = new jsPDF();
 
- // Logo
- try {
- const logoUrl = '/mwangaza_logo.png';
- const response = await fetch(logoUrl);
- const blob = await response.blob();
- const logoBase64 = await new Promise((resolve) => {
- const reader = new FileReader();
- reader.onloadend = () => resolve(reader.result);
- reader.readAsDataURL(blob);
+ const headerBottomY = await drawPDFHeader({
+   doc,
+   title: "Case Plan Report",
+   clientName: client.name,
+   clientId: client.client_id,
+   clientStatus: client.status,
+   profilePictureUrl: client.profile_picture,
  });
- doc.addImage(logoBase64 as string, 'PNG', 14, 10, 30, 30);
- } catch (e) { console.warn("Logo failed"); }
 
- // Header
- doc.setFontSize(18);
- doc.setTextColor(249, 115, 22);
- doc.text("New Life Mwangaza Rehabilitation Center", 50, 20);
-
- doc.setFontSize(14);
- doc.setTextColor(0, 0, 0);
- doc.text("Case Plan Report", 50, 28);
-
- doc.setFontSize(12);
- doc.text(`Client: ${client.name}`, 50, 36);
-
- let yPos = 50;
+ let yPos = headerBottomY + 8;
 
  const addSection = (title: string, goals: string, entries: any[]) => {
  if (yPos > 250) { doc.addPage(); yPos = 20; }

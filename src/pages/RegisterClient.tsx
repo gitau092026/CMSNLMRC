@@ -7,7 +7,7 @@ import {
   User, Calendar, Cake, Users, Hash, Shield, UserCircle, UserCircle2,
   FileText, Activity, AlertTriangle, Baby, MapPin, Phone, School,
   Brain, Heart, Save, CheckSquare, ArrowRight, ArrowLeft, Plus, Trash2,
-  Search, ChevronDown, X
+  Search, ChevronDown, X, Edit
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -37,8 +37,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  secondName: z.string().min(1, "Second name is required"),
+  firstName: z.string().optional(),
+  secondName: z.string().optional(),
   dateOfBirth: z.string().optional(),
   calculatedAge: z.string().optional(),
   gender: z.string().optional(),
@@ -49,9 +49,9 @@ const formSchema = z.object({
   partnerContactPerson: z.string().optional(),
   partnerContact: z.string().optional(),
   admissionDate: z.string().optional(),
-  intakeNumber: z.string().min(1, "Intake number is required"),
+  intakeNumber: z.string().optional(),
   policeOBNumber: z.string().optional(),
-  clientStatus: z.string().min(1, "Client status is required"),
+  clientStatus: z.string().optional().default("Active"),
   familyComposition: z.string().optional(),
   siblingsInfo: z.string().optional(),
   siblingsList: z.array(z.object({
@@ -273,7 +273,7 @@ const RegisterClient = () => {
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [selectedClientSummary, setSelectedClientSummary] = useState<any>(null);
 
-  const isAllowed = ["admin", "social_work", "education", "counselling", "empowerment", "intern_social_work", "intern_counselling"].includes(user?.role || "");
+  const isAllowed = ["admin", "social_work", "education", "counselling", "counsellor", "empowerment", "intern_social_work", "intern_counselling"].includes(user?.role || "");
 
   useEffect(() => {
     if (user && !isAllowed) {
@@ -542,24 +542,39 @@ const RegisterClient = () => {
         ...assessmentData
       } = values;
 
-      const packedNotes = JSON.stringify({ assessmentData });
+      let existingNotesObj: any = {};
+      try {
+        existingNotesObj = typeof selectedClientSummary?.notes === 'string'
+          ? JSON.parse(selectedClientSummary.notes)
+          : (selectedClientSummary?.notes || {});
+      } catch {
+        existingNotesObj = {};
+      }
+
+      const packedNotes = JSON.stringify({
+        ...existingNotesObj,
+        assessmentData: {
+          ...(existingNotesObj.assessmentData || {}),
+          ...assessmentData
+        }
+      });
 
       const clientData = {
-        name: `${values.firstName} ${values.secondName}`,
-        client_id: values.intakeNumber,
-        age: parseInt(values.calculatedAge || "0"),
-        gender: values.gender,
-        date_of_birth: values.dateOfBirth || null,
-        nickname: values.nickname || null,
-        admission_type: values.admissionType || null,
-        admission_type_details: values.admissionTypeDetails || null,
-        partner_name: values.partnerName || null,
-        partner_contact_person: values.partnerContactPerson || null,
-        partner_contact: values.partnerContact || null,
-        admission_date: values.admissionDate || null,
-        intake_number: values.intakeNumber || null,
-        police_ob_number: values.policeOBNumber || null,
-        status: values.clientStatus === 'Complete' ? 'Alumni - Awaiting Placement' : values.clientStatus,
+        name: (values.firstName ? `${values.firstName} ${values.secondName || ''}`.trim() : selectedClientSummary?.name) || "",
+        client_id: values.intakeNumber || selectedClientSummary?.client_id || selectedClientSummary?.intake_number || "",
+        age: parseInt(values.calculatedAge || selectedClientSummary?.age?.toString() || "0") || null,
+        gender: values.gender || selectedClientSummary?.gender || null,
+        date_of_birth: values.dateOfBirth || selectedClientSummary?.date_of_birth || null,
+        nickname: values.nickname || selectedClientSummary?.nickname || null,
+        admission_type: values.admissionType || selectedClientSummary?.admission_type || null,
+        admission_type_details: values.admissionTypeDetails || selectedClientSummary?.admission_type_details || null,
+        partner_name: values.partnerName || selectedClientSummary?.partner_name || null,
+        partner_contact_person: values.partnerContactPerson || selectedClientSummary?.partner_contact_person || null,
+        partner_contact: values.partnerContact || selectedClientSummary?.partner_contact || null,
+        admission_date: values.admissionDate || selectedClientSummary?.admission_date || null,
+        intake_number: values.intakeNumber || selectedClientSummary?.intake_number || selectedClientSummary?.client_id || null,
+        police_ob_number: values.policeOBNumber || selectedClientSummary?.police_ob_number || null,
+        status: values.clientStatus === 'Complete' ? 'Alumni - Awaiting Placement' : (values.clientStatus || selectedClientSummary?.status || 'Active'),
         family_composition: values.familyComposition || null,
         siblings_info: values.siblingsInfo || null,
         mother_status: values.motherStatus || null,
@@ -582,8 +597,8 @@ const RegisterClient = () => {
         level_reached: values.levelReached || null,
         education_status: values.educationStatus || null,
         rescue_details: values.rescueDetails || null,
-        contact: values.motherContact || values.fatherContact || values.guardianContact || "",
-        address: values.motherLocation || values.fatherLocation || values.guardianLocation || "",
+        contact: values.motherContact || values.fatherContact || values.guardianContact || selectedClientSummary?.contact || "",
+        address: values.motherLocation || values.fatherLocation || values.guardianLocation || selectedClientSummary?.address || "",
         notes: packedNotes
       };
 
@@ -626,6 +641,8 @@ const RegisterClient = () => {
       if (shouldNavigate) {
         if (values.clientStatus === 'Complete' || values.clientStatus === 'Alumni - Awaiting Placement') {
           navigate(`/aftercare/add/${savedClientId}`);
+        } else if (savedClientId) {
+          navigate(`/clients/${savedClientId}`);
         } else {
           navigate("/clients");
         }
@@ -638,28 +655,8 @@ const RegisterClient = () => {
   };
 
   const handleNext = async (nextTab: string) => {
-    let fieldsToValidate: (keyof z.infer<typeof formSchema>)[] = [];
-
-    switch (activeTab) {
-      case "bio":
-        fieldsToValidate = ["firstName", "secondName", "dateOfBirth", "gender", "intakeNumber"];
-        break;
-      case "admission":
-        fieldsToValidate = ["admissionDate", "admissionType"];
-        break;
-      default:
-        fieldsToValidate = []; // Other tabs have mostly optional fields
-    }
-
-    // Pass the specific fields for validation
-    // Cast to any to avoid complex Zod typing issues in this context, 
-    // although strictly it expects FieldPath<T>
-    const isValid = await form.trigger(fieldsToValidate as any);
-
-    if (isValid) {
-      const success = await onSubmit(form.getValues(), false);
-      if (success) setActiveTab(nextTab);
-    }
+    const success = await onSubmit(form.getValues(), false);
+    if (success) setActiveTab(nextTab);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -773,7 +770,15 @@ const RegisterClient = () => {
                     <CardTitle className="text-lg flex items-center gap-2">
                       <UserCircle className="h-5 w-5 text-primary" /> Admission Summary
                     </CardTitle>
-                    <a href={`/admission?clientId=${activeClientId}&mode=edit`} className="text-xs text-primary hover:underline font-medium">Edit Admission Data</a>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/10"
+                      onClick={() => navigate(`/admission?clientId=${activeClientId}&mode=edit`)}
+                    >
+                      <Edit className="h-3.5 w-3.5 mr-1" /> Edit Admission Details
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from"react";
 import { useNavigate } from"react-router-dom";
-import { Users, UserCheck, GraduationCap, MapPin, Search, Edit, Eye, Trash2 } from"lucide-react";
+import { Users, UserCheck, GraduationCap, MapPin, Search, Edit, Eye, Trash2, FileText } from "lucide-react";
 import { supabase } from"@/integrations/supabase/client";
 import { useToast } from"@/hooks/use-toast";
 import { useAuth } from"@/contexts/AuthContext";
@@ -455,10 +455,20 @@ const Clients = () => {
  </Button>
  <Button
  size="sm"
+ variant="outline"
+ onClick={() => navigate(`/admission?clientId=${client.id}&mode=edit`)}
+ title="Edit Admission Details"
+ >
+ <FileText className="h-4 w-4 mr-1" />
+ Admission
+ </Button>
+ <Button
+ size="sm"
  onClick={() => navigate(`/register?clientId=${client.id}&mode=edit`)}
+ title="Edit Assessment Details"
  >
  <Edit className="h-4 w-4 mr-1" />
- Edit
+ Assessment
  </Button>
  {isAdmin && (
  <Button

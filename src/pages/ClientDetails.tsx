@@ -12,6 +12,7 @@ import { ClientAvatar } from "@/components/ClientAvatar";
 import { getCachedClient, setCachedClient } from "@/lib/clientCache";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { drawPDFHeader } from "@/utils/pdfHeader";
 
 import {
     User,
@@ -144,14 +145,14 @@ const safeJsonParse = (input: any) => {
     }
 
     if (typeof parsed === 'object' && parsed !== null) {
-        if ('notes' in parsed || 'assessmentData' in parsed) {
-            return {
-                notes: parsed.notes || "",
-                assessmentData: parsed.assessmentData || {}
-            };
-        }
-        // Fallback: If it's a structured object from Admission Form, treat it as assessmentData
-        return { notes: "", assessmentData: parsed };
+        const assessmentData = {
+            ...parsed,
+            ...(parsed.assessmentData || {})
+        };
+        return {
+            notes: parsed.notes || "",
+            assessmentData
+        };
     }
 
     return { notes: String(input), assessmentData: null };
@@ -285,35 +286,16 @@ const ClientDetails = () => {
         if (!client) return;
         
         const doc = new jsPDF();
-        const pageWidth = doc.internal.pageSize.width;
-        let startY = 20;
         
-        // --- Header Setup ---
-        try {
-            const logoUrl = '/mwangaza_logo.png';
-            const img = new Image();
-            img.src = logoUrl;
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = reject;
-            });
-            if (img.width) {
-                const imgWidth = 30;
-                const imgHeight = (img.height * imgWidth) / img.width;
-                const imgX = (pageWidth - imgWidth) / 2;
-                doc.addImage(img, 'PNG', imgX, 10, imgWidth, imgHeight);
-                startY = 10 + imgHeight + 8;
-            }
-        } catch (error) {
-            console.error("Error adding logo to PDF", error);
-        }
-        
-        doc.setFontSize(20);
-        doc.setTextColor(40, 40, 40);
-        doc.text("Client Profile Details", pageWidth / 2, startY, { align: "center" });
-        doc.setFontSize(10);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, startY + 6, { align: "center" });
+        // --- Header Setup: Logo on left, Profile picture on right ---
+        const headerBottomY = await drawPDFHeader({
+            doc,
+            title: "Client Profile Details",
+            clientName: client.name,
+            clientId: client.client_id,
+            clientStatus: client.status,
+            profilePictureUrl: client.profile_picture,
+        });
         
         // Helper to cleanly handle lists and text formatting
         const cleanVal = (val: any): string => {
@@ -357,7 +339,7 @@ const ClientDetails = () => {
            }
            
            autoTable(doc, {
-               startY: finalY + 10,
+               startY: finalY + 6,
                head: [[{ content: title, colSpan: 4, styles: { halign: 'left' } }]],
                body: formattedBody,
                theme: 'grid',
@@ -373,7 +355,7 @@ const ClientDetails = () => {
         const addWideTable = (title: string, head: string[], body: string[][]) => {
             if (body.length === 0) return;
             autoTable(doc, {
-                startY: finalY + 10,
+                startY: finalY + 6,
                 head: [[{ content: title, colSpan: head.length, styles: { fillColor: [63, 81, 181], textColor: 255 } }], head],
                 body,
                 theme: 'grid',
@@ -382,7 +364,7 @@ const ClientDetails = () => {
             finalY = (doc as any).lastAutoTable.finalY;
         };
 
-        let finalY = startY + 12;
+        let finalY = headerBottomY;
 
         // ---- Basic Info ----
         const basicInfoData = [
@@ -871,9 +853,13 @@ const ClientDetails = () => {
                                     <Download className="h-4 w-4 mr-2" />
                                     Export PDF
                                 </Button>
+                                <Button size="sm" variant="outline" onClick={() => navigate(`/admission?clientId=${client.id}&mode=edit`)}>
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    Edit Admission
+                                </Button>
                                 <Button size="sm" onClick={() => navigate(`/register?clientId=${client.id}&mode=edit`)}>
                                     <Edit className="h-4 w-4 mr-2" />
-                                    Edit
+                                    Edit Assessment
                                 </Button>
                             </div>
                         </div>
@@ -882,11 +868,20 @@ const ClientDetails = () => {
 
                 {/* Basic Information */}
                 <Card className="border-primary/20 shadow-sm hover:shadow-md transition-shadow duration-200">
-                    <CardHeader className="py-3 px-4 border-b border-primary/20 bg-primary/10">
+                    <CardHeader className="py-3 px-4 border-b border-primary/20 bg-primary/10 flex flex-row items-center justify-between">
                         <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
                             <User className="h-5 w-5 text-primary" />
                             Basic Information
                         </CardTitle>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={() => navigate(`/admission?clientId=${client.id}&mode=edit`)}
+                        >
+                            <Edit className="h-3.5 w-3.5 mr-1" />
+                            Edit Admission
+                        </Button>
                     </CardHeader>
                     <CardContent className="pt-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -972,11 +967,20 @@ const ClientDetails = () => {
 
                 {/* Admission Details */}
                 <Card className="border-primary/20 shadow-sm hover:shadow-md transition-shadow duration-200">
-                    <CardHeader className="py-3 px-4 border-b border-primary/20 bg-primary/10">
+                    <CardHeader className="py-3 px-4 border-b border-primary/20 bg-primary/10 flex flex-row items-center justify-between">
                         <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-800">
                             <Calendar className="h-5 w-5 text-primary" />
                             Admission Details
                         </CardTitle>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={() => navigate(`/admission?clientId=${client.id}&mode=edit`)}
+                        >
+                            <Edit className="h-3.5 w-3.5 mr-1" />
+                            Edit Admission
+                        </Button>
                     </CardHeader>
                     <CardContent className="pt-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
