@@ -834,43 +834,45 @@ const ClientDetails = () => {
 
             <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-4">
                 {/* Client Header Card */}
-                <Card className="border-border">
-                    <CardContent className="p-3 sm:p-6">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-16 w-16 border-2 border-primary/20 shadow-sm">
-                                    <AvatarImage src={client.profile_picture} alt={client.name} className="object-cover" />
-                                    <AvatarFallback className="bg-primary/10">
-                                        <User className="h-8 w-8 text-primary" />
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-foreground tracking-tight">{client.name}</h2>
-                                    <div className="flex flex-wrap gap-2 mt-1">
-                                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-medium">
-                                            {client.client_id}
-                                        </Badge>
-                                        <Badge className={`${getStatusColor(client.status)} border px-3 py-0.5 text-xs font-semibold shadow-sm`}>
-                                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
-                                            {client.status === 'Complete' ? 'Alumni' :
-                                                client.status === 'Alumni - Awaiting Placement' ? 'Completed Rehabilitation' :
-                                                    client.status}
-                                        </Badge>
-                                    </div>
+                <Card className="border-border overflow-hidden">
+                    <div className="flex flex-col md:flex-row">
+                        {/* Large Profile Picture */}
+                        <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-6 flex flex-col items-center justify-center min-w-[180px]">
+                            <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-primary/40 shadow-2xl ring-4 ring-primary/20">
+                                <AvatarImage src={client.profile_picture} alt={client.name} className="object-cover" />
+                                <AvatarFallback className="bg-primary/10">
+                                    <User className="h-16 w-16 text-primary" />
+                                </AvatarFallback>
+                            </Avatar>
+                        </div>
+                        {/* Client Info */}
+                        <div className="flex-1 p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">{client.name}</h2>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-medium">
+                                        {client.client_id}
+                                    </Badge>
+                                    <Badge className={`${getStatusColor(client.status)} border px-3 py-0.5 text-xs font-semibold shadow-sm`}>
+                                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
+                                        {client.status === 'Complete' ? 'Alumni' :
+                                            client.status === 'Alumni - Awaiting Placement' ? 'Completed Rehabilitation' :
+                                                client.status}
+                                    </Badge>
                                 </div>
                             </div>
-                            <div className="flex flex-wrap gap-2 w-full md:w-auto mt-2 md:mt-0">
-                                <Button size="sm" variant="outline" onClick={handleExportPDF} className="flex-1 md:flex-none">
+                            <div className="flex flex-wrap gap-2 md:flex-nowrap">
+                                <Button size="sm" variant="outline" onClick={handleExportPDF}>
                                     <Download className="h-4 w-4 mr-2" />
                                     Export PDF
                                 </Button>
-                                <Button size="sm" onClick={() => navigate(`/register?clientId=${client.id}&mode=edit`)} className="flex-1 md:flex-none">
+                                <Button size="sm" onClick={() => navigate(`/register?clientId=${client.id}&mode=edit`)}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                 </Button>
                             </div>
                         </div>
-                    </CardContent>
+                    </div>
                 </Card>
 
                 {/* Basic Information */}

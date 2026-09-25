@@ -13,7 +13,6 @@ export interface DashboardStats {
   admissions: number;
   exits: number;
   activePlacements: number;
-  totalStreetVisits?: number;
 
   // Chart Data
   systemActivityData: { date: string; visits: number; sessions: number; medical: number }[];
@@ -22,7 +21,6 @@ export interface DashboardStats {
   admissionsExitsData: { month: string; admissions: number; exits: number }[];
   placementData: { name: string; value: number; color: string }[];
   reunificationData: { name: string; value: number; color: string }[];
-  rescueAreaData?: { name: string; value: number }[];
   programStats: {
     totalCasePlans: number;
     totalAftercareRecords: number;
@@ -58,7 +56,6 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           medicalRes,
           exitsRes,
           aftercareRes,
-          streetVisitsRes,
           casePlansRes,
           subjectsRes
         ] = await Promise.all([
@@ -68,7 +65,6 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           supabase.from("medical_records").select("*"),
           supabase.from("exit_records").select("*"),
           supabase.from("aftercare_records").select("*"),
-          supabase.from("street_visits").select("*"),
           supabase.from("case_plans").select("id"),
           supabase.from("subjects").select("id")
         ]);
@@ -82,7 +78,6 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
         if (medicalRes.error) console.warn("medical_records table error:", medicalRes.error);
         if (exitsRes.error) console.warn("exit_records table error:", exitsRes.error);
         if (aftercareRes.error) console.warn("aftercare_records table error:", aftercareRes.error);
-        if (streetVisitsRes?.error) console.warn("street_visits table error:", streetVisitsRes.error);
         if (casePlansRes?.error) console.warn("case_plans table error:", casePlansRes.error);
         if (subjectsRes?.error) console.warn("subjects table error:", subjectsRes.error);
 
@@ -92,7 +87,6 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
         const allMedical = medicalRes.data || [];
         const allExits = exitsRes.data || [];
         const allAftercare = aftercareRes.data || [];
-        const allStreetVisits = streetVisitsRes?.data || [];
         const allCasePlans = casePlansRes?.data || [];
         const allSubjects = subjectsRes?.data || [];
 
@@ -285,19 +279,6 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           color: COLORS[(index + 2) % COLORS.length]
         }));
 
-        // 7. Rescue Area Concentration
-        const rescueAreaCounts: Record<string, number> = {};
-        allStreetVisits.forEach(v => {
-          if (v.street_name) rescueAreaCounts[v.street_name] = (rescueAreaCounts[v.street_name] || 0) + 1;
-        });
-        clientsRes.data?.forEach(c => {
-          if (c.street_name) rescueAreaCounts[c.street_name] = (rescueAreaCounts[c.street_name] || 0) + 1;
-        });
-        const rescueAreaData = Object.keys(rescueAreaCounts)
-          .sort((a, b) => rescueAreaCounts[b] - rescueAreaCounts[a])
-          .slice(0, 10)
-          .map(name => ({ name, value: rescueAreaCounts[name] }));
-
         setStats({
           totalClients,
           activeClients,
@@ -307,14 +288,12 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           admissions,
           exits,
           activePlacements,
-          totalStreetVisits: allStreetVisits.length,
           systemActivityData: displayActivityData,
           demographicsData,
           clientStatusData,
           admissionsExitsData,
           placementData,
           reunificationData,
-          rescueAreaData,
           programStats: {
             totalCasePlans: allCasePlans.length,
             totalAftercareRecords: allAftercare.length,

@@ -405,8 +405,12 @@ const RegisterClient = () => {
 
   useEffect(() => {
     fetchAllClients();
-    if (activeClientId) fetchClientData(activeClientId);
-  }, [activeClientId]);
+    const clientIdFromUrl = searchParams.get('clientId');
+    if (clientIdFromUrl) {
+      setActiveClientId(clientIdFromUrl);
+      fetchClientData(clientIdFromUrl);
+    }
+  }, [searchParams]);
 
   const fetchAllClients = async () => {
     try {
@@ -441,6 +445,7 @@ const RegisterClient = () => {
   };
 
   const fetchClientData = async (clientId: string = activeClientId as string) => {
+    if (!clientId) return;
     try {
       setLoading(true);
       const { data, error } = await supabase.from('clients').select('*').eq('id', clientId).single();
