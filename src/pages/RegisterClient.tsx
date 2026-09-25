@@ -12,6 +12,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { compressImage } from "@/utils/imageCompression";
+import { setCachedClient } from "@/lib/clientCache";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -586,10 +588,14 @@ const RegisterClient = () => {
       };
 
       if (selectedFile) {
-        const fileExt = selectedFile.name.split('.').pop();
+        const fileExt = selectedFile.name.split('.').pop() || 'jpg';
         const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `${fileName}`;
-        const { error: uploadError } = await supabase.storage.from('client-photos').upload(filePath, selectedFile);
+        const { error: uploadError } = await supabase.storage.from('client-photos').upload(filePath, selectedFile, {
+          contentType: selectedFile.type || 'image/jpeg',
+          cacheControl: '31536000',
+          upsert: true
+        });
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('client-photos').getPublicUrl(filePath);
         (clientData as any).profile_picture = publicUrl;
@@ -613,6 +619,8 @@ const RegisterClient = () => {
           window.history.replaceState({}, '', newUrl.toString());
         }
       }
+
+      setCachedClient({ ...clientData, id: savedClientId });
 
       toast({ title: "Success", description: shouldNavigate ? "Client & Assessment saved successfully!" : "Progress saved." });
       if (shouldNavigate) {
@@ -654,13 +662,20 @@ const RegisterClient = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setProfilePreview(reader.result as string);
-      reader.readAsDataURL(file);
-      setSelectedFile(file);
+      try {
+        const { blob, dataUrl } = await compressImage(file, { maxWidth: 500, maxHeight: 500, quality: 0.85 });
+        setProfilePreview(dataUrl);
+        const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: "image/jpeg" });
+        setSelectedFile(compressedFile);
+      } catch {
+        const reader = new FileReader();
+        reader.onloadend = () => setProfilePreview(reader.result as string);
+        reader.readAsDataURL(file);
+        setSelectedFile(file);
+      }
     }
   };
 

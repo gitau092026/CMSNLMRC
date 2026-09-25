@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ClientAvatar } from "@/components/ClientAvatar";
+import { getCachedClient, setCachedClient } from "@/lib/clientCache";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -158,9 +160,11 @@ const safeJsonParse = (input: any) => {
 const ClientDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { toast } = useToast();
-    const [client, setClient] = useState<Client | null>(null);
-    const [loading, setLoading] = useState(true);
+    const initialClient = ((location.state as any)?.client as Client) || (id ? (getCachedClient(id) as Client) : null);
+    const [client, setClient] = useState<Client | null>(initialClient);
+    const [loading, setLoading] = useState(!initialClient);
 
     const { notes: actualNotes, assessmentData } = client ? safeJsonParse(client.notes) : { notes: "", assessmentData: null };
 
@@ -221,6 +225,7 @@ const ClientDetails = () => {
 
             if (error) throw error;
             setClient(data);
+            setCachedClient(data);
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -838,12 +843,12 @@ const ClientDetails = () => {
                     <div className="flex flex-col md:flex-row">
                         {/* Large Profile Picture */}
                         <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-6 flex flex-col items-center justify-center min-w-[180px]">
-                            <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-primary/40 shadow-2xl ring-4 ring-primary/20">
-                                <AvatarImage src={client.profile_picture} alt={client.name} className="object-cover" />
-                                <AvatarFallback className="bg-primary/10">
-                                    <User className="h-16 w-16 text-primary" />
-                                </AvatarFallback>
-                            </Avatar>
+                            <ClientAvatar
+                                src={client.profile_picture}
+                                alt={client.name}
+                                sizeClassName="h-32 w-32 md:h-40 md:w-40"
+                                priority={true}
+                            />
                         </div>
                         {/* Client Info */}
                         <div className="flex-1 p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
