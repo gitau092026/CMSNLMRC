@@ -4,6 +4,7 @@ import { Users, UserCheck, GraduationCap, MapPin, Search, Edit, Eye, Trash2, Fil
 import { supabase } from"@/integrations/supabase/client";
 import { useToast } from"@/hooks/use-toast";
 import { useAuth } from"@/contexts/AuthContext";
+import { ClientAvatar } from "@/components/ClientAvatar";
 import { setCachedClient, prefetchAvatars, prefetchImage } from "@/lib/clientCache";
 import { cn } from "@/lib/utils";
 import { Input } from"@/components/ui/input";
@@ -41,6 +42,12 @@ interface Client {
   [key: string]: any;
 }
 
+export const isAlumniStatus = (s: string) =>
+  ['complete', 'graduated', 'alumni', 'alumni - placed', 'alumni - awaiting placement'].includes((s || '').toLowerCase().trim());
+
+export const isActiveStatus = (s: string) =>
+  (s || '').toLowerCase().trim() === 'active';
+
 const Clients = () => {
  const navigate = useNavigate();
  const { toast } = useToast();
@@ -61,7 +68,7 @@ const Clients = () => {
  total: 0,
  active: 0,
  graduated: 0,
- street: 0
+ other: 0
  });
 
  useEffect(() => {
@@ -102,11 +109,11 @@ const Clients = () => {
 
  // Calculate stats
  const total = (data || []).length;
- const active = (data || []).filter(c => c.status === 'Active').length;
- const graduated = (data || []).filter(c => ['complete', 'graduated', 'alumni', 'alumni - placed', 'alumni - awaiting placement'].includes((c.status || '').toLowerCase())).length;
- const street = (data || []).filter(c => ['street', 'escape'].includes((c.status || '').toLowerCase())).length;
+ const active = (data || []).filter(c => isActiveStatus(c.status)).length;
+ const graduated = (data || []).filter(c => isAlumniStatus(c.status)).length;
+ const other = Math.max(0, total - active - graduated);
 
- setStats({ total, active, graduated, street });
+ setStats({ total, active, graduated, other });
  } catch (error: any) {
  toast({
  title:"Error",
@@ -119,24 +126,23 @@ const Clients = () => {
  };
 
  const getStatusColor = (status: string) => {
- switch (status) {
- case"Active":
- return"bg-success/20 text-success border-success/30";
- case"Complete":
- case"Alumni - Awaiting Placement":
- return"bg-orange-100 text-orange-600 border-orange-300 dark:bg-orange-950 dark:text-orange-400";
- case"Alumni - Placed":
- return"bg-green-100 text-green-600 border-green-300 dark:bg-green-950 dark:text-green-400";
- case"Escape":
- case"Exited":
- return"bg-red-100 text-red-600 border-red-300 dark:bg-red-950 dark:text-red-400";
- case"Voluntary Discharge":
- return"bg-purple-100 text-purple-600 border-purple-300 dark:bg-purple-950 dark:text-purple-400";
- case"Early Reintegration":
- return"bg-blue-100 text-blue-600 border-blue-300 dark:bg-blue-950 dark:text-blue-400";
- default:
- return"bg-muted text-muted-foreground";
- }
+   if (isActiveStatus(status)) {
+     return "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300";
+   }
+   if (isAlumniStatus(status)) {
+     return "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950 dark:text-purple-300";
+   }
+   switch (status) {
+     case "Escape":
+     case "Exited":
+       return "bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-400";
+     case "Voluntary Discharge":
+       return "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-400";
+     case "Early Reintegration":
+       return "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-400";
+     default:
+       return "bg-muted text-muted-foreground border-border";
+   }
  };
 
  const handleDeleteClick = (client: Client) => {
@@ -210,21 +216,30 @@ const Clients = () => {
  } catch { return"Pending"; }
  };
 
- const isAlumniStatus = (s: string) => ['complete', 'graduated', 'alumni', 'alumni - placed', 'alumni - awaiting placement'].includes((s || '').toLowerCase());
-
  const filteredClients = clients.filter(client => {
- const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- client.client_id.toLowerCase().includes(searchQuery.toLowerCase());
- const matchesStatus =
-   statusFilter === "all" ||
-   (statusFilter === "all-alumni" && isAlumniStatus(client.status)) ||
-   client.status?.toLowerCase() === statusFilter.toLowerCase();
+   const q = searchQuery.toLowerCase().trim();
+   const matchesSearch = !q ||
+     client.name.toLowerCase().includes(q) ||
+     client.client_id.toLowerCase().includes(q) ||
+     (client.nickname && client.nickname.toLowerCase().includes(q));
 
- // Assessment Filter
- const assessmentStatus = getAssessmentStatus(client.notes);
- const matchesAssessment = assessmentFilter ==="all" || assessmentStatus === assessmentFilter;
+   let matchesStatus = true;
+   if (statusFilter === "all") {
+     matchesStatus = true;
+   } else if (statusFilter === "Active") {
+     matchesStatus = isActiveStatus(client.status);
+   } else if (statusFilter === "graduated" || statusFilter === "all-alumni") {
+     matchesStatus = isAlumniStatus(client.status);
+   } else if (statusFilter === "other") {
+     matchesStatus = !isActiveStatus(client.status) && !isAlumniStatus(client.status);
+   } else {
+     matchesStatus = (client.status || '').toLowerCase() === statusFilter.toLowerCase();
+   }
 
- return matchesSearch && matchesStatus && matchesAssessment;
+   const assessmentStatus = getAssessmentStatus(client.notes);
+   const matchesAssessment = assessmentFilter === "all" || assessmentStatus === assessmentFilter;
+
+   return matchesSearch && matchesStatus && matchesAssessment;
  });
 
  return (
@@ -237,58 +252,64 @@ const Clients = () => {
 
  <div className="p-4 sm:p-6 lg:p-8 space-y-6">
  {/* Stats Cards */}
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
- <Card onClick={() => setStatusFilter('all')} className={cn("border-border cursor-pointer hover:border-primary/50 transition-all", statusFilter === 'all' && "ring-2 ring-primary")}>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+ <Card onClick={() => setStatusFilter('all')} className={cn("border-border cursor-pointer hover:border-primary/50 transition-all shadow-xs", statusFilter === 'all' && "ring-2 ring-primary bg-primary/5")}>
  <CardContent className="p-4 flex items-center gap-3">
- <div className="p-2 rounded-lg bg-purple-600">
- <Users className="h-5 w-5 text-white" />
+ <div className="p-2.5 rounded-lg bg-primary text-white shadow-xs">
+ <Users className="h-5 w-5" />
  </div>
  <div>
  <p className="text-2xl font-bold text-foreground">{stats.total}</p>
- <p className="text-xs text-muted-foreground uppercase">Total</p>
+ <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">All Clients</p>
  </div>
  </CardContent>
  </Card>
 
- <Card onClick={() => setStatusFilter(statusFilter === 'Active' ? 'all' : 'Active')} className={cn("border-border cursor-pointer hover:border-primary/50 transition-all", statusFilter === 'Active' && "ring-2 ring-success")}>
+ <Card onClick={() => setStatusFilter(statusFilter === 'Active' ? 'all' : 'Active')} className={cn("border-border cursor-pointer hover:border-emerald-500/50 transition-all shadow-xs", statusFilter === 'Active' && "ring-2 ring-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20")}>
  <CardContent className="p-4 flex items-center gap-3">
- <div className="p-2 rounded-lg bg-success">
- <UserCheck className="h-5 w-5 text-white" />
+ <div className="p-2.5 rounded-lg bg-emerald-600 text-white shadow-xs">
+ <UserCheck className="h-5 w-5" />
  </div>
  <div>
+ <div className="flex items-center gap-1.5">
  <p className="text-2xl font-bold text-foreground">{stats.active}</p>
- <p className="text-xs text-muted-foreground uppercase">Active</p>
+ <span className="relative flex h-2 w-2">
+ <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+ <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+ </span>
+ </div>
+ <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Active Clients</p>
  </div>
  </CardContent>
  </Card>
 
- <Card onClick={() => setStatusFilter(statusFilter === 'all-alumni' ? 'all' : 'all-alumni')} className={cn("border-border cursor-pointer hover:border-primary/50 transition-all", statusFilter === 'all-alumni' && "ring-2 ring-orange-500")}>
+ <Card onClick={() => setStatusFilter(statusFilter === 'graduated' || statusFilter === 'all-alumni' ? 'all' : 'graduated')} className={cn("border-border cursor-pointer hover:border-purple-500/50 transition-all shadow-xs", (statusFilter === 'graduated' || statusFilter === 'all-alumni') && "ring-2 ring-purple-600 bg-purple-50/40 dark:bg-purple-950/20")}>
  <CardContent className="p-4 flex items-center gap-3">
- <div className="p-2 rounded-lg bg-orange-500">
- <GraduationCap className="h-5 w-5 text-white" />
+ <div className="p-2.5 rounded-lg bg-purple-600 text-white shadow-xs">
+ <GraduationCap className="h-5 w-5" />
  </div>
  <div>
  <p className="text-2xl font-bold text-foreground">{stats.graduated}</p>
- <p className="text-xs text-muted-foreground uppercase">Alumni / Graduated</p>
+ <p className="text-xs font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wider">Graduated (Alumni)</p>
  </div>
  </CardContent>
  </Card>
 
- <Card onClick={() => setStatusFilter(statusFilter === 'Street' ? 'all' : 'Street')} className={cn("border-border cursor-pointer hover:border-primary/50 transition-all", statusFilter === 'Street' && "ring-2 ring-blue-600")}>
+ <Card onClick={() => setStatusFilter(statusFilter === 'other' ? 'all' : 'other')} className={cn("border-border cursor-pointer hover:border-amber-500/50 transition-all shadow-xs", statusFilter === 'other' && "ring-2 ring-amber-500 bg-amber-50/40 dark:bg-amber-950/20")}>
  <CardContent className="p-4 flex items-center gap-3">
- <div className="p-2 rounded-lg bg-blue-600">
- <MapPin className="h-5 w-5 text-white" />
+ <div className="p-2.5 rounded-lg bg-amber-600 text-white shadow-xs">
+ <MapPin className="h-5 w-5" />
  </div>
  <div>
- <p className="text-2xl font-bold text-foreground">{stats.street}</p>
- <p className="text-xs text-muted-foreground uppercase">Street</p>
+ <p className="text-2xl font-bold text-foreground">{stats.other}</p>
+ <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Other Statuses</p>
  </div>
  </CardContent>
  </Card>
  </div>
 
  {/* Search and Filters */}
- <Card className="border-border">
+ <Card className="border-border shadow-xs">
  <CardContent className="p-6 space-y-4">
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  <div className="relative md:col-span-1">
@@ -306,13 +327,18 @@ const Clients = () => {
  <SelectValue placeholder="All Status" />
  </SelectTrigger>
  <SelectContent className="bg-popover border-border z-50">
- <SelectItem value="all">All Status</SelectItem>
- <SelectItem value="all-alumni">All Alumni / Graduated</SelectItem>
- <SelectItem value="Active">Active</SelectItem>
- <SelectItem value="Complete">Complete (Alumni)</SelectItem>
- <SelectItem value="Alumni - Awaiting Placement">Alumni - Awaiting Placement</SelectItem>
- <SelectItem value="Alumni - Placed">Alumni - Placed</SelectItem>
- <SelectItem value="Graduated">Graduated</SelectItem>
+ <SelectItem value="all">All Status ({stats.total})</SelectItem>
+ <SelectItem value="Active" className="text-emerald-700 dark:text-emerald-400 font-semibold">
+ 🟢 Active Clients ({stats.active})
+ </SelectItem>
+ <SelectItem value="graduated" className="text-purple-700 dark:text-purple-400 font-semibold">
+ 🎓 All Graduated / Alumni ({stats.graduated})
+ </SelectItem>
+ <SelectItem value="Graduated">🎓 Graduated</SelectItem>
+ <SelectItem value="Complete">🎓 Complete (Alumni)</SelectItem>
+ <SelectItem value="Alumni - Placed">🎓 Alumni - Placed</SelectItem>
+ <SelectItem value="Alumni - Awaiting Placement">🎓 Alumni - Awaiting Placement</SelectItem>
+ <SelectItem value="other">Other Statuses ({stats.other})</SelectItem>
  <SelectItem value="Exited">Exited</SelectItem>
  <SelectItem value="Escape">Escape</SelectItem>
  <SelectItem value="Voluntary Discharge">Voluntary Discharge</SelectItem>
@@ -343,6 +369,67 @@ const Clients = () => {
  <SelectItem value="Completed">Completed</SelectItem>
  </SelectContent>
  </Select>
+ </div>
+
+ {/* Quick Filter Pills */}
+ <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/60">
+ <span className="text-xs font-semibold text-muted-foreground mr-1">Quick View:</span>
+ <Button
+ type="button"
+ size="sm"
+ variant={statusFilter === 'all' ? 'default' : 'outline'}
+ onClick={() => setStatusFilter('all')}
+ className={cn("h-7 px-3 text-xs font-medium rounded-full transition-colors", statusFilter === 'all' && "bg-primary text-primary-foreground")}
+ >
+ All ({stats.total})
+ </Button>
+ <Button
+ type="button"
+ size="sm"
+ variant={statusFilter === 'Active' ? 'default' : 'outline'}
+ onClick={() => setStatusFilter(statusFilter === 'Active' ? 'all' : 'Active')}
+ className={cn(
+ "h-7 px-3 text-xs font-medium rounded-full gap-1.5 transition-colors",
+ statusFilter === 'Active'
+ ? "bg-emerald-600 text-white hover:bg-emerald-700"
+ : "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50"
+ )}
+ >
+ <span className="relative flex h-2 w-2">
+ <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+ <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+ </span>
+ Active Clients ({stats.active})
+ </Button>
+ <Button
+ type="button"
+ size="sm"
+ variant={(statusFilter === 'graduated' || statusFilter === 'all-alumni') ? 'default' : 'outline'}
+ onClick={() => setStatusFilter(statusFilter === 'graduated' || statusFilter === 'all-alumni' ? 'all' : 'graduated')}
+ className={cn(
+ "h-7 px-3 text-xs font-medium rounded-full gap-1.5 transition-colors",
+ (statusFilter === 'graduated' || statusFilter === 'all-alumni')
+ ? "bg-purple-600 text-white hover:bg-purple-700"
+ : "border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/50"
+ )}
+ >
+ <GraduationCap className="h-3.5 w-3.5" />
+ Graduated / Alumni ({stats.graduated})
+ </Button>
+ <Button
+ type="button"
+ size="sm"
+ variant={statusFilter === 'other' ? 'default' : 'outline'}
+ onClick={() => setStatusFilter(statusFilter === 'other' ? 'all' : 'other')}
+ className={cn(
+ "h-7 px-3 text-xs font-medium rounded-full transition-colors",
+ statusFilter === 'other'
+ ? "bg-amber-600 text-white hover:bg-amber-700"
+ : "text-muted-foreground"
+ )}
+ >
+ Other Statuses ({stats.other})
+ </Button>
  </div>
 
  <p className="text-sm text-muted-foreground">
@@ -411,36 +498,103 @@ const Clients = () => {
  </CardContent>
  </Card>
  ) : (
- filteredClients.map((client) => (
- <Card key={client.id} className={`border-border hover:shadow-md transition-shadow ${selectedIds.includes(client.id) ? 'border-primary/40 bg-primary/5' : ''}`}>
+ filteredClients.map((client) => {
+ const isAlumni = isAlumniStatus(client.status);
+ const isActive = isActiveStatus(client.status);
+
+ return (
+ <Card
+ key={client.id}
+ className={cn(
+ "border-border hover:shadow-md transition-all duration-200",
+ selectedIds.includes(client.id) && "ring-2 ring-primary bg-primary/5",
+ isActive && "border-l-[5px] border-l-emerald-500 bg-emerald-50/15 dark:bg-emerald-950/10 hover:border-l-emerald-600",
+ isAlumni && "border-l-[5px] border-l-purple-600 bg-purple-50/20 dark:bg-purple-950/15 hover:border-l-purple-700",
+ !isActive && !isAlumni && "border-l-[5px] border-l-muted-foreground/30"
+ )}
+ >
  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
- <div className="flex items-center gap-3 flex-1">
-  <Checkbox 
-    checked={selectedIds.includes(client.id)}
-    onCheckedChange={(checked) => {
-      if (checked) {
-        setSelectedIds([...selectedIds, client.id]);
-      } else {
-        setSelectedIds(selectedIds.filter(id => id !== client.id));
-      }
-    }}
-    className="border-2 border-gray-400 dark:border-gray-500 bg-background mr-2"
-  />
- <p className="font-medium text-foreground">{client.name}</p>
- <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 shrink-0">
+ <div className="flex items-center gap-3 flex-1 min-w-0">
+ <Checkbox 
+ checked={selectedIds.includes(client.id)}
+ onCheckedChange={(checked) => {
+ if (checked) {
+ setSelectedIds([...selectedIds, client.id]);
+ } else {
+ setSelectedIds(selectedIds.filter(id => id !== client.id));
+ }
+ }}
+ className="border-2 border-gray-400 dark:border-gray-500 bg-background mr-1 shrink-0"
+ />
+
+ {/* Avatar with status ring */}
+ <div className="shrink-0 relative">
+ <ClientAvatar
+ src={client.profile_picture}
+ alt={client.name}
+ sizeClassName="h-11 w-11"
+ iconClassName="h-5 w-5 text-muted-foreground"
+ className={cn(
+ "rounded-full ring-2 shadow-xs",
+ isActive ? "ring-emerald-500" : isAlumni ? "ring-purple-500" : "ring-border"
+ )}
+ priority={false}
+ />
+ {isActive && (
+ <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-background flex items-center justify-center" title="Active Client">
+ <span className="h-1.5 w-1.5 rounded-full bg-white" />
+ </span>
+ )}
+ {isAlumni && (
+ <span className="absolute -top-1 -right-1 bg-purple-600 text-white rounded-full p-0.5 shadow-xs ring-2 ring-background" title="Graduated Alumni">
+ <GraduationCap className="h-3 w-3" />
+ </span>
+ )}
+ </div>
+
+ {/* Client Info */}
+ <div className="min-w-0 flex-1 space-y-1">
+ <div className="flex flex-wrap items-center gap-2">
+ <p className="font-semibold text-foreground truncate text-base">{client.name}</p>
+ <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 shrink-0 text-xs font-mono font-medium">
  {client.client_id}
  </Badge>
- <Badge variant="outline" className={`shrink-0 ${getAssessmentStatus(client.notes) === 'Completed' ? 'text-green-600 border-green-200 bg-green-50' : 'text-orange-600 border-orange-200 bg-orange-50'}`}>
+ {isActive && (
+ <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 font-semibold px-2.5 py-0.5 text-xs flex items-center gap-1.5 shrink-0 shadow-xs">
+ <span className="relative flex h-2 w-2">
+ <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+ <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+ </span>
+ Active Client
+ </Badge>
+ )}
+ {isAlumni && (
+ <Badge className="bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950 dark:text-purple-200 font-semibold px-2.5 py-0.5 text-xs flex items-center gap-1.5 shrink-0 shadow-xs">
+ <GraduationCap className="h-3.5 w-3.5 text-purple-700 dark:text-purple-300 shrink-0" />
+ Graduated (Alumni)
+ </Badge>
+ )}
+ </div>
+ <div className="flex flex-wrap items-center gap-2">
+ <Badge variant="outline" className={`shrink-0 text-[11px] py-0 px-2 ${getAssessmentStatus(client.notes) === 'Completed' ? 'text-green-700 border-green-200 bg-green-50/70 dark:bg-green-950/40' : 'text-orange-700 border-orange-200 bg-orange-50/70 dark:bg-orange-950/40'}`}>
  Assessment: {getAssessmentStatus(client.notes)}
  </Badge>
+ {client.admission_type && (
+ <span className="text-xs text-muted-foreground capitalize">
+ • {client.admission_type}
+ </span>
+ )}
  </div>
- <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
- <Badge className={`${getStatusColor(client.status || '')} border shrink-0`}>
- <span className="inline-block w-2 h-2 rounded-full bg-current mr-2" />
+ </div>
+ </div>
+
+ <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto shrink-0 justify-between sm:justify-end">
+ <Badge className={`${getStatusColor(client.status || '')} border shrink-0 text-xs py-1 px-2.5 shadow-xs font-medium`}>
+ <span className="inline-block w-2 h-2 rounded-full bg-current mr-1.5" />
  {client.status === 'Alumni - Placed' || client.status === 'Alumni - Awaiting Placement'
- ? 'Completed Rehabilitation'
- : client.status === 'Complete'
- ? 'Alumni'
+ ? `Alumni (${client.status.replace('Alumni - ', '')})`
+ : client.status === 'Complete' || client.status === 'Graduated'
+ ? 'Graduated (Alumni)'
  : client.status || 'Unknown'}
  </Badge>
  <div className="flex gap-2 ml-auto sm:ml-0">
@@ -484,7 +638,8 @@ const Clients = () => {
  </div>
  </CardContent>
  </Card>
- ))
+ );
+ })
  )}
 
  {/* Bulk Status Update Panel */}
@@ -503,10 +658,11 @@ const Clients = () => {
               <SelectValue placeholder="Choose Status" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border z-50">
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Alumni - Awaiting Placement">Alumni - Awaiting Placement</SelectItem>
-              <SelectItem value="Alumni - Placed">Alumni - Placed</SelectItem>
-              <SelectItem value="Graduated">Graduated</SelectItem>
+              <SelectItem value="Active">🟢 Active</SelectItem>
+              <SelectItem value="Graduated">🎓 Graduated (Alumni)</SelectItem>
+              <SelectItem value="Complete">🎓 Complete (Alumni)</SelectItem>
+              <SelectItem value="Alumni - Placed">🎓 Alumni - Placed</SelectItem>
+              <SelectItem value="Alumni - Awaiting Placement">🎓 Alumni - Awaiting Placement</SelectItem>
               <SelectItem value="Exited">Exited</SelectItem>
               <SelectItem value="Escape">Escape</SelectItem>
               <SelectItem value="Voluntary Discharge">Voluntary Discharge</SelectItem>

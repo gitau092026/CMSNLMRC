@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ClientAvatar } from "@/components/ClientAvatar";
 import { getCachedClient, setCachedClient } from "@/lib/clientCache";
+import { cn } from "@/lib/utils";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { drawPDFHeader } from "@/utils/pdfHeader";
@@ -238,25 +239,29 @@ const ClientDetails = () => {
         }
     };
 
+    const isAlumniStatus = (s: string) =>
+        ['complete', 'graduated', 'alumni', 'alumni - placed', 'alumni - awaiting placement'].includes((s || '').toLowerCase().trim());
+
+    const isActiveStatus = (s: string) =>
+        (s || '').toLowerCase().trim() === 'active';
+
     const getStatusColor = (status: string) => {
+        if (isActiveStatus(status)) {
+            return "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300";
+        }
+        if (isAlumniStatus(status)) {
+            return "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950 dark:text-purple-300";
+        }
         switch (status) {
-            case "Active":
-                return "bg-success/20 text-success border-success/30";
-            case "Graduated":
-            case "Complete":
-                return "bg-primary/20 text-primary border-primary/30";
             case "Escape":
+            case "Exited":
                 return "bg-red-100 text-red-600 border-red-300 dark:bg-red-950 dark:text-red-400";
             case "Voluntary Discharge":
-                return "bg-purple-100 text-purple-600 border-purple-300 dark:bg-purple-950 dark:text-purple-400";
+                return "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-400";
             case "Early Reintegration":
                 return "bg-blue-100 text-blue-600 border-blue-300 dark:bg-blue-950 dark:text-blue-400";
-            case "Alumni - Awaiting Placement":
-                return "bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950 dark:text-rose-400";
-            case "Alumni - Placed":
-                return "bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950 dark:text-rose-400";
             default:
-                return "bg-muted text-muted-foreground";
+                return "bg-muted text-muted-foreground border-border";
         }
     };
 
@@ -821,7 +826,11 @@ const ClientDetails = () => {
 
             <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-4">
                 {/* Client Header Card */}
-                <Card className="border-border overflow-hidden">
+                <Card className={cn(
+                    "border-border overflow-hidden shadow-sm",
+                    isActiveStatus(client.status) && "border-l-[5px] border-l-emerald-500",
+                    isAlumniStatus(client.status) && "border-l-[5px] border-l-purple-600"
+                )}>
                     <div className="flex flex-col md:flex-row">
                         {/* Large Profile Picture */}
                         <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-6 flex flex-col items-center justify-center min-w-[180px]">
@@ -829,6 +838,10 @@ const ClientDetails = () => {
                                 src={client.profile_picture}
                                 alt={client.name}
                                 sizeClassName="h-32 w-32 md:h-40 md:w-40"
+                                className={cn(
+                                    "rounded-full ring-4 shadow-sm",
+                                    isActiveStatus(client.status) ? "ring-emerald-500/40" : isAlumniStatus(client.status) ? "ring-purple-500/40" : "ring-border"
+                                )}
                                 priority={true}
                             />
                         </div>
@@ -840,12 +853,30 @@ const ClientDetails = () => {
                                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-medium">
                                         {client.client_id}
                                     </Badge>
-                                    <Badge className={`${getStatusColor(client.status)} border px-3 py-0.5 text-xs font-semibold shadow-sm`}>
-                                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
-                                        {client.status === 'Complete' ? 'Alumni' :
-                                            client.status === 'Alumni - Awaiting Placement' ? 'Completed Rehabilitation' :
-                                                client.status}
-                                    </Badge>
+                                    {isActiveStatus(client.status) ? (
+                                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 border px-3 py-1 text-xs font-semibold shadow-xs flex items-center gap-1.5">
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                                            </span>
+                                            Active Client (In Rehabilitation)
+                                        </Badge>
+                                    ) : isAlumniStatus(client.status) ? (
+                                        <Badge className="bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950 dark:text-purple-200 border px-3 py-1 text-xs font-semibold shadow-xs flex items-center gap-1.5">
+                                            <GraduationCap className="h-4 w-4 text-purple-700 dark:text-purple-300 shrink-0" />
+                                            Graduated (Alumni)
+                                            {client.status && !['complete', 'graduated', 'alumni'].includes(client.status.toLowerCase().trim()) && (
+                                                <span className="opacity-80 font-normal">
+                                                    • {client.status.replace('Alumni - ', '')}
+                                                </span>
+                                            )}
+                                        </Badge>
+                                    ) : (
+                                        <Badge className={`${getStatusColor(client.status)} border px-3 py-0.5 text-xs font-semibold shadow-sm`}>
+                                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
+                                            {client.status || 'Unknown'}
+                                        </Badge>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex flex-wrap gap-2 md:flex-nowrap">
