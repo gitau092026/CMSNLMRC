@@ -53,7 +53,7 @@ import {
     Heart,
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -226,8 +226,8 @@ export default function ManageUsers() {
 
             // Create a secondary client so we don't overwrite the admin's session
             const secondarySupabase = createClient(
-                import.meta.env.VITE_SUPABASE_URL,
-                import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                SUPABASE_URL,
+                SUPABASE_PUBLISHABLE_KEY,
                 {
                     auth: {
                         persistSession: false,
