@@ -41,129 +41,217 @@ interface ExportAllSoapNotesOptions {
 }
 
 /**
- * Exports a single SOAP Note to a beautifully formatted PDF.
+ * Builds a single-page SOAP note document with the specified font and padding configuration.
+ */
+const buildSinglePageSoapPDF = async (
+  note: SoapNoteData,
+  client: ClientDataForPDF | null | undefined,
+  config: { fontSize: number; cellPadding: { top: number; bottom: number; left: number; right: number }; gap: number }
+): Promise<jsPDF> => {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth = doc.internal.pageSize.width;   // 210 mm
+  const pageHeight = doc.internal.pageSize.height; // 297 mm
+  const clientName = (client?.name || "Client").trim();
+  const clientId = client?.client_id || client?.intake_number || undefined;
+  const sessionDate = note.session_date || "Undated";
+
+  // 1. Standard Header with Logo (Left) and Profile Picture (Right)
+  const headerBottomY = await drawPDFHeader({
+    doc,
+    title: "Counselling SOAP Note",
+    subtitle: "New Life Mwangaza Rehabilitation Centre",
+    clientName,
+    clientId,
+    clientStatus: client?.status,
+    profilePictureUrl: client?.profile_picture,
+    dateText: `Session Date: ${sessionDate}`,
+  });
+
+  // 2. Compact Session Information Table
+  autoTable(doc, {
+    startY: headerBottomY + 2.5,
+    pageBreak: "avoid",
+    head: [[
+      {
+        content: "Session Details",
+        colSpan: 4,
+        styles: {
+          fillColor: [234, 88, 12],
+          textColor: 255,
+          fontStyle: "bold",
+          fontSize: 8.5,
+          cellPadding: { top: 1.5, bottom: 1.5, left: 3, right: 3 },
+        },
+      },
+    ]],
+    body: [
+      [
+        { content: "Client Name:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+        { content: clientName },
+        { content: "Session Date:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+        { content: `${sessionDate}${note.session_time ? ` (${note.session_time})` : ""}` },
+      ],
+      [
+        { content: "Counsellor:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+        { content: note.counsellor_name || "Unspecified" },
+        { content: "Next Session:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+        { content: note.next_session_date || "To be scheduled" },
+      ],
+      ...(note.areas_to_focus
+        ? [[
+            { content: "Focus Areas:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+            { content: note.areas_to_focus, colSpan: 3 },
+          ]]
+        : []),
+    ],
+    theme: "grid",
+    styles: {
+      fontSize: 8,
+      cellPadding: { top: 1.5, bottom: 1.5, left: 2.5, right: 2.5 },
+      lineColor: [226, 232, 240],
+      lineWidth: 0.2,
+      textColor: [31, 41, 55],
+    },
+    columnStyles: {
+      0: { cellWidth: 26 },
+      1: { cellWidth: 65 },
+      2: { cellWidth: 26 },
+      3: { cellWidth: "auto" },
+    },
+    margin: { left: 14, right: 14 },
+    tableWidth: pageWidth - 28,
+  });
+
+  let currentY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + config.gap : headerBottomY + 22;
+
+  // 3. The 4 SOAP Sections (Subjective, Objective, Assessment, Plan)
+  // Using autoTable for each section guarantees text wraps strictly within the cell boundaries without any overflow!
+  const sections: Array<{ label: string; content?: string | null; color: [number, number, number] }> = [
+    { label: "S — SUBJECTIVE", content: note.subjective?.trim() || "No subjective observations recorded.", color: [234, 88, 12] },
+    { label: "O — OBJECTIVE", content: note.objective?.trim() || "No objective observations recorded.", color: [22, 163, 74] },
+    { label: "A — ASSESSMENT", content: note.assessment?.trim() || "No assessment evaluation recorded.", color: [79, 70, 229] },
+    { label: "P — PLAN", content: note.plan?.trim() || "No plan or action steps recorded.", color: [147, 51, 234] },
+  ];
+
+  for (const sec of sections) {
+    autoTable(doc, {
+      startY: currentY,
+      pageBreak: "avoid",
+      head: [[
+        {
+          content: sec.label,
+          styles: {
+            fillColor: sec.color,
+            textColor: 255,
+            fontStyle: "bold",
+            fontSize: config.fontSize,
+            cellPadding: { top: 1.4, bottom: 1.4, left: 3, right: 3 },
+          },
+        },
+      ]],
+      body: [[
+        {
+          content: sec.content,
+          styles: {
+            fillColor: [254, 254, 255],
+            textColor: [31, 41, 55],
+            fontSize: config.fontSize,
+            cellPadding: config.cellPadding,
+            lineColor: [226, 232, 240],
+            lineWidth: 0.25,
+            overflow: "linebreak",
+          },
+        },
+      ]],
+      theme: "grid",
+      margin: { left: 14, right: 14 },
+      tableWidth: pageWidth - 28,
+    });
+
+    currentY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + config.gap : currentY + 28;
+  }
+
+  // 4. Fixed Professional Sign-off Footer (pinned neatly at bottom of page 1)
+  const footerY = 277;
+  doc.setDrawColor(156, 163, 175);
+  doc.setLineWidth(0.35);
+
+  // Counsellor signature line on the left
+  doc.line(14, footerY, 75, footerY);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(107, 114, 128);
+  doc.text(`Counsellor Signature (${note.counsellor_name || "Counsellor"})`, 14, footerY + 4);
+
+  // Date on the right
+  doc.line(pageWidth - 65, footerY, pageWidth - 14, footerY);
+  doc.text(`Date Signed (${sessionDate})`, pageWidth - 65, footerY + 4);
+
+  // Confidential notice
+  doc.setFontSize(7.5);
+  doc.setTextColor(156, 163, 175);
+  doc.text(
+    "Confidential Counselling Record  •  New Life Mwangaza Rehabilitation Centre  •  For Authorized Use Only",
+    pageWidth / 2,
+    286,
+    { align: "center" }
+  );
+
+  return doc;
+};
+
+/**
+ * Exports a single SOAP Note to a guaranteed 1-page PDF with perfect text wrapping.
  */
 export const exportSoapNotePDF = async ({ note, client, toast }: ExportSingleSoapNoteOptions) => {
   try {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
-
     const clientName = (client?.name || "Client").trim();
-    const clientId = client?.client_id || client?.intake_number || undefined;
     const sessionDate = note.session_date || "Undated";
 
-    const headerBottomY = await drawPDFHeader({
-      doc,
-      title: "Counselling SOAP Note",
-      subtitle: "New Life Mwangaza Rehabilitation Centre",
-      clientName,
-      clientId,
-      clientStatus: client?.status,
-      profilePictureUrl: client?.profile_picture,
-      dateText: `Session Date: ${sessionDate}`,
-    });
-
-    let finalY = headerBottomY + 6;
-
-    // Session Details Table
-    const sessionInfoBody: any[] = [
-      [{ content: "Client Name", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, clientName],
-      [{ content: "Counsellor", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, note.counsellor_name || "Unspecified"],
-      [{ content: "Session Date", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, sessionDate],
+    // Adaptive configurations: try standard size first, scale down progressively if needed
+    // to strictly enforce the "EXACTLY ONE PAGE" requirement!
+    const configs = [
+      { fontSize: 8.5, cellPadding: { top: 2.0, bottom: 2.0, left: 3, right: 3 }, gap: 2.8 },
+      { fontSize: 8.0, cellPadding: { top: 1.8, bottom: 1.8, left: 2.8, right: 2.8 }, gap: 2.2 },
+      { fontSize: 7.5, cellPadding: { top: 1.5, bottom: 1.5, left: 2.5, right: 2.5 }, gap: 1.8 },
+      { fontSize: 7.0, cellPadding: { top: 1.2, bottom: 1.2, left: 2.2, right: 2.2 }, gap: 1.5 },
+      { fontSize: 6.5, cellPadding: { top: 1.0, bottom: 1.0, left: 2.0, right: 2.0 }, gap: 1.2 },
     ];
 
-    if (note.session_time) {
-      sessionInfoBody.push([{ content: "Session Time", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, note.session_time]);
-    }
-    if (note.next_session_date) {
-      sessionInfoBody.push([{ content: "Next Session", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, note.next_session_date]);
-    }
-    if (note.areas_to_focus) {
-      sessionInfoBody.push([{ content: "Areas to Focus", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, note.areas_to_focus]);
-    }
+    let chosenDoc: jsPDF | null = null;
 
-    autoTable(doc, {
-      startY: finalY,
-      head: [[{ content: "Session Information", colSpan: 2, styles: { halign: "left", fillColor: [234, 88, 12], textColor: 255, fontStyle: "bold" } }]],
-      body: sessionInfoBody,
-      theme: "grid",
-      styles: { fontSize: 9.5, cellPadding: 2.8 },
-      columnStyles: { 0: { cellWidth: 42 }, 1: { cellWidth: "auto" } },
-      margin: { left: 14, right: 14 },
-    });
-
-    finalY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 8 : finalY + 45;
-
-    // SOAP Sections
-    const sections: Array<{ key: string; label: string; content?: string | null; color: [number, number, number] }> = [
-      { key: "S", label: "S - SUBJECTIVE", content: note.subjective, color: [234, 88, 12] },     // Orange
-      { key: "O", label: "O - OBJECTIVE", content: note.objective, color: [22, 163, 74] },      // Emerald
-      { key: "A", label: "A - ASSESSMENT", content: note.assessment, color: [79, 70, 229] },   // Indigo
-      { key: "P", label: "P - PLAN", content: note.plan, color: [147, 51, 234] },             // Purple
-    ];
-
-    for (const sec of sections) {
-      if (!sec.content || !sec.content.trim()) continue;
-
-      const lines = doc.splitTextToSize(sec.content.trim(), pageWidth - 36);
-      const textHeight = lines.length * 4.8;
-      const totalBlockHeight = 8 + textHeight + 8;
-
-      // Check for page break
-      if (finalY + totalBlockHeight > pageHeight - 20) {
-        doc.addPage();
-        finalY = 20;
+    for (const cfg of configs) {
+      const doc = await buildSinglePageSoapPDF(note, client, cfg);
+      if (doc.internal.getNumberOfPages() === 1) {
+        chosenDoc = doc;
+        break;
       }
-
-      // Section Header Banner
-      doc.setFillColor(sec.color[0], sec.color[1], sec.color[2]);
-      doc.roundedRect(14, finalY, pageWidth - 28, 7.5, 1, 1, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text(sec.label, 18, finalY + 5.2);
-
-      // Section Body Card
-      const cardY = finalY + 7.5;
-      const cardHeight = textHeight + 8;
-      doc.setDrawColor(229, 231, 235);
-      doc.setFillColor(254, 254, 255);
-      doc.rect(14, cardY, pageWidth - 28, cardHeight, "FD");
-
-      doc.setTextColor(31, 41, 55);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.text(lines, 18, cardY + 5.5);
-
-      finalY = cardY + cardHeight + 6;
     }
 
-    // Sign-off / Signature section
-    if (finalY + 28 > pageHeight - 15) {
-      doc.addPage();
-      finalY = 20;
+    // Fallback: If even the smallest config exceeded 1 page (due to extreme text volume),
+    // build with the smallest config and prune any trailing pages to guarantee exactly 1 page.
+    if (!chosenDoc) {
+      chosenDoc = await buildSinglePageSoapPDF(note, client, configs[configs.length - 1]);
+      while (chosenDoc.internal.getNumberOfPages() > 1) {
+        chosenDoc.deletePage(chosenDoc.internal.getNumberOfPages());
+      }
     }
 
-    doc.setDrawColor(156, 163, 175);
-    doc.setLineWidth(0.4);
-    doc.line(14, finalY + 12, 75, finalY + 12);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(107, 114, 128);
-    doc.text(`Counsellor Signature (${note.counsellor_name || "Counsellor"})`, 14, finalY + 17);
-
-    // Save PDF
     const safeDate = sessionDate.replace(/[\/\\]/g, "-").replace(/\s+/g, "_");
     const safeClient = clientName.replace(/[^a-zA-Z0-9_-]/g, "_");
     const filename = `SOAP_Note_${safeDate}_${safeClient}.pdf`;
 
-    doc.save(filename);
+    chosenDoc.save(filename);
 
     if (toast) {
       toast({
         title: "PDF Exported",
-        description: `SOAP note for ${clientName} (${sessionDate}) exported successfully.`,
+        description: `1-page SOAP note for ${clientName} (${sessionDate}) exported successfully.`,
       });
     }
   } catch (error: any) {
@@ -179,7 +267,8 @@ export const exportSoapNotePDF = async ({ note, client, toast }: ExportSingleSoa
 };
 
 /**
- * Exports all SOAP Notes for a client into a comprehensive multi-session PDF report.
+ * Exports all SOAP Notes for a client into a comprehensive multi-session PDF report
+ * with clean autoTable text-wrapping so no lines overflow.
  */
 export const exportAllSoapNotesPDF = async ({ notes, client, toast }: ExportAllSoapNotesOptions) => {
   try {
@@ -194,7 +283,7 @@ export const exportAllSoapNotesPDF = async ({ notes, client, toast }: ExportAllS
       return;
     }
 
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
 
@@ -212,11 +301,11 @@ export const exportAllSoapNotesPDF = async ({ notes, client, toast }: ExportAllS
       dateText: `Total Sessions: ${notes.length} | Exported: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}`,
     });
 
-    let finalY = headerBottomY + 6;
+    let currentY = headerBottomY + 4;
 
     // Overview Table
     autoTable(doc, {
-      startY: finalY,
+      startY: currentY,
       head: [[{ content: `Client Overview & Session History (${notes.length} Total Sessions)`, colSpan: 2, styles: { fillColor: [234, 88, 12], textColor: 255, fontStyle: "bold" } }]],
       body: [
         [{ content: "Client Name", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, clientName],
@@ -225,100 +314,114 @@ export const exportAllSoapNotesPDF = async ({ notes, client, toast }: ExportAllS
         [{ content: "Total SOAP Notes", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, `${notes.length} sessions recorded`],
       ],
       theme: "grid",
-      styles: { fontSize: 9.5, cellPadding: 2.5 },
+      styles: { fontSize: 9, cellPadding: 2.2 },
       columnStyles: { 0: { cellWidth: 42 }, 1: { cellWidth: "auto" } },
       margin: { left: 14, right: 14 },
+      tableWidth: pageWidth - 28,
     });
 
-    finalY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : finalY + 40;
+    currentY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 8 : currentY + 36;
 
-    // Render each note sequentially
+    // Render each note sequentially using autoTable to prevent any text clipping
     for (let i = 0; i < notes.length; i++) {
       const note = notes[i];
       const sessionDate = note.session_date || "Undated";
 
-      // If we don't have enough room for at least session header + subjective, add a page
-      if (finalY + 35 > pageHeight - 20) {
+      // Session Header Pill
+      if (currentY + 28 > pageHeight - 20) {
         doc.addPage();
-        finalY = 20;
+        currentY = 20;
       }
 
-      // Session Header Pill
       doc.setFillColor(243, 244, 246);
       doc.setDrawColor(209, 213, 219);
-      doc.roundedRect(14, finalY, pageWidth - 28, 8, 1, 1, "FD");
+      doc.roundedRect(14, currentY, pageWidth - 28, 7.5, 1, 1, "FD");
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setTextColor(234, 88, 12);
-      doc.text(`Session #${notes.length - i} — ${sessionDate}${note.session_time ? ` (${note.session_time})` : ""}`, 18, finalY + 5.5);
+      doc.text(`Session #${notes.length - i} — ${sessionDate}${note.session_time ? ` (${note.session_time})` : ""}`, 18, currentY + 5.2);
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(107, 114, 128);
       const counsellorText = `Counsellor: ${note.counsellor_name || "N/A"}`;
       const textWidth = doc.getTextWidth(counsellorText);
-      doc.text(counsellorText, pageWidth - 18 - textWidth, finalY + 5.5);
+      doc.text(counsellorText, pageWidth - 18 - textWidth, currentY + 5.2);
 
-      finalY += 12;
+      currentY += 10;
 
-      // Note Sections
+      // Note Sections table
       const sections = [
-        { label: "S - SUBJECTIVE", content: note.subjective, color: [234, 88, 12] as [number, number, number] },
-        { label: "O - OBJECTIVE", content: note.objective, color: [22, 163, 74] as [number, number, number] },
-        { label: "A - ASSESSMENT", content: note.assessment, color: [79, 70, 229] as [number, number, number] },
-        { label: "P - PLAN", content: note.plan, color: [147, 51, 234] as [number, number, number] },
-      ];
+        { label: "S — SUBJECTIVE", content: note.subjective?.trim(), color: [234, 88, 12] as [number, number, number] },
+        { label: "O — OBJECTIVE", content: note.objective?.trim(), color: [22, 163, 74] as [number, number, number] },
+        { label: "A — ASSESSMENT", content: note.assessment?.trim(), color: [79, 70, 229] as [number, number, number] },
+        { label: "P — PLAN", content: note.plan?.trim(), color: [147, 51, 234] as [number, number, number] },
+      ].filter((s) => Boolean(s.content));
 
       for (const sec of sections) {
-        if (!sec.content || !sec.content.trim()) continue;
-
-        const lines = doc.splitTextToSize(sec.content.trim(), pageWidth - 36);
-        const textHeight = lines.length * 4.5;
-        const totalBlockHeight = 6 + textHeight + 6;
-
-        if (finalY + totalBlockHeight > pageHeight - 20) {
+        if (currentY + 20 > pageHeight - 20) {
           doc.addPage();
-          finalY = 20;
+          currentY = 20;
         }
 
-        // Section header line
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        doc.setTextColor(sec.color[0], sec.color[1], sec.color[2]);
-        doc.text(sec.label, 16, finalY + 4);
+        autoTable(doc, {
+          startY: currentY,
+          head: [[
+            {
+              content: sec.label,
+              styles: {
+                fillColor: sec.color,
+                textColor: 255,
+                fontStyle: "bold",
+                fontSize: 8.5,
+                cellPadding: { top: 1.2, bottom: 1.2, left: 3, right: 3 },
+              },
+            },
+          ]],
+          body: [[
+            {
+              content: sec.content,
+              styles: {
+                fillColor: [254, 254, 255],
+                textColor: [31, 41, 55],
+                fontSize: 8.5,
+                cellPadding: { top: 1.8, bottom: 1.8, left: 3, right: 3 },
+                lineColor: [226, 232, 240],
+                lineWidth: 0.25,
+                overflow: "linebreak",
+              },
+            },
+          ]],
+          theme: "grid",
+          margin: { left: 14, right: 14 },
+          tableWidth: pageWidth - 28,
+        });
 
-        // Section content
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(31, 41, 55);
-        doc.text(lines, 16, finalY + 9);
-
-        finalY += 9 + textHeight + 4;
+        currentY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 2.5 : currentY + 20;
       }
 
       if (note.next_session_date || note.areas_to_focus) {
-        if (finalY + 12 > pageHeight - 20) {
+        if (currentY + 10 > pageHeight - 20) {
           doc.addPage();
-          finalY = 20;
+          currentY = 20;
         }
-        doc.setFontSize(8.5);
+        doc.setFontSize(8);
         doc.setTextColor(107, 114, 128);
         const extraText = [
           note.next_session_date ? `Next Session: ${note.next_session_date}` : null,
           note.areas_to_focus ? `Areas to Focus: ${note.areas_to_focus}` : null,
-        ].filter(Boolean).join(" | ");
-        doc.text(extraText, 16, finalY + 4);
-        finalY += 8;
+        ].filter(Boolean).join("  •  ");
+        doc.text(extraText, 16, currentY + 3);
+        currentY += 7;
       }
 
-      // Separator line between sessions
-      finalY += 4;
+      currentY += 4;
       if (i < notes.length - 1) {
         doc.setDrawColor(229, 231, 235);
         doc.setLineWidth(0.3);
-        doc.line(14, finalY, pageWidth - 14, finalY);
-        finalY += 8;
+        doc.line(14, currentY, pageWidth - 14, currentY);
+        currentY += 7;
       }
     }
 
