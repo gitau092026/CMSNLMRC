@@ -6,9 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, StickyNote, FileText, LogOut, Calendar, User, Clock, Download } from "lucide-react";
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { drawPDFHeader } from "@/utils/pdfHeader";
+import { exportSoapNotePDF, exportAllSoapNotesPDF } from "@/utils/exportSoapNotePDF";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -105,54 +103,11 @@ export default function ClientCounsellingRecords({ client, onBack }: ClientCouns
   };
 
   const handleExportSoapNotePDF = async (note: SoapNote) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    const headerBottomY = await drawPDFHeader({
-      doc,
-      title: "SOAP Note",
-      clientName: client.name,
-      clientId: client.intake_number || undefined,
-      clientStatus: client.status,
-      profilePictureUrl: client.profile_picture,
-      dateText: `Session Date: ${note.session_date}`,
-    });
-    let finalY = headerBottomY + 6;
-    const addNoteSection = (label: string, content: string | null, color: [number, number, number]) => {
-      if (!content) return;
-      doc.setFontSize(12);
-      doc.setTextColor(color[0], color[1], color[2]);
-      doc.setFont("helvetica", "bold");
-      doc.text(label, 14, finalY + 6);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(40, 40, 40);
-      doc.setFontSize(10);
-      const lines = doc.splitTextToSize(content, pageWidth - 28);
-      doc.text(lines, 14, finalY + 14);
-      finalY = finalY + 14 + (lines.length * 5) + 8;
-    };
-    const sessionInfoBody: any[] = [
-      [{ content: 'Client Name', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, client.name],
-      [{ content: 'Counsellor', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.counsellor_name],
-      [{ content: 'Session Date', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.session_date],
-      ...(note.session_time ? [[{ content: 'Session Time', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.session_time]] : []),
-      ...(note.next_session_date ? [[{ content: 'Next Session', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.next_session_date]] : []),
-      ...(note.areas_to_focus ? [[{ content: 'Areas to Focus', styles: { fontStyle: 'bold', fillColor: [240, 244, 248] } }, note.areas_to_focus]] : []),
-    ];
+    await exportSoapNotePDF({ note, client, toast });
+  };
 
-    autoTable(doc, {
-      startY: finalY,
-      head: [[{ content: 'Session Information', colSpan: 2, styles: { halign: 'left', fillColor: [63, 81, 181], textColor: 255 } }]],
-      body: sessionInfoBody,
-      theme: 'grid',
-      columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 'auto' } },
-    });
-    finalY = (doc as any).lastAutoTable.finalY + 8;
-    addNoteSection('S - SUBJECTIVE', note.subjective, [217, 87, 37]);
-    addNoteSection('O - OBJECTIVE', note.objective, [46, 125, 50]);
-    addNoteSection('A - ASSESSMENT', note.assessment, [63, 81, 181]);
-    addNoteSection('P - PLAN', note.plan, [156, 39, 176]);
-    doc.save(`SOAP_Note_${note.session_date.replace(/\//g, '-')}_${client.name.replace(/\s+/g, '_')}.pdf`);
-    toast({ title: "PDF Exported", description: "SOAP note has been exported to PDF successfully." });
+  const handleExportAllSoapNotesPDF = async () => {
+    await exportAllSoapNotesPDF({ notes: soapNotes, client, toast });
   };
 
   return (
@@ -218,9 +173,21 @@ export default function ClientCounsellingRecords({ client, onBack }: ClientCouns
         {/* SOAP Notes Tab */}
         <TabsContent value="soap" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>SOAP Notes History</CardTitle>
-              <CardDescription>All counselling session notes for this client</CardDescription>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3">
+              <div>
+                <CardTitle>SOAP Notes History</CardTitle>
+                <CardDescription>All counselling session notes for this client ({soapNotes.length})</CardDescription>
+              </div>
+              {soapNotes.length > 0 && (
+                <Button
+                  size="sm"
+                  onClick={handleExportAllSoapNotesPDF}
+                  className="bg-orange-600 hover:bg-orange-700 text-white shrink-0 self-start sm:self-auto"
+                >
+                  <Download className="h-4 w-4 mr-1.5" />
+                  Export All Notes (PDF)
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? (
