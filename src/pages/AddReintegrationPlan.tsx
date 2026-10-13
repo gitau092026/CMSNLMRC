@@ -192,7 +192,7 @@ const AddReintegrationPlan = () => {
         assessment_report: formData.assessmentReport,
         key_contacts: formData.keyContacts,
         reintegration_plans: formData.reintegrationPlans,
-        proposedCaregivers: formData.proposedCaregivers,
+        proposed_caregivers: formData.proposedCaregivers,
         caregiver_relationship: formData.caregiverRelationship,
         caregiver_contacts: formData.caregiverContacts,
         nature_of_reintegration: formData.natureOfReintegration,
