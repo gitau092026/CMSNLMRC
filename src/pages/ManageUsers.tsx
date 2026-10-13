@@ -359,8 +359,10 @@ export default function ManageUsers() {
             empowerment: "text-yellow-500",
             aftercare: "text-rose-500",
             alumni: "text-indigo-500",
+            intern_social_work: "text-pink-400",
+            intern_counselling: "text-purple-400",
         };
-        return colors[role];
+        return colors[role] || "text-slate-500";
     };
 
     // Calculate statistics
