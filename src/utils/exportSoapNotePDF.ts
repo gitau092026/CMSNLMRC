@@ -55,7 +55,6 @@ const buildSinglePageSoapPDF = async (
   });
 
   const pageWidth = doc.internal.pageSize.width;   // 210 mm
-  const pageHeight = doc.internal.pageSize.height; // 297 mm
   const clientName = (client?.name || "Client").trim();
   const clientId = client?.client_id || client?.intake_number || undefined;
   const sessionDate = note.session_date || "Undated";
@@ -91,24 +90,24 @@ const buildSinglePageSoapPDF = async (
     ]],
     body: [
       [
-        { content: "Client Name:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+        { content: "Client Name:", styles: { fontStyle: "bold" as const, fillColor: [243, 244, 246] } },
         { content: clientName },
-        { content: "Session Date:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+        { content: "Session Date:", styles: { fontStyle: "bold" as const, fillColor: [243, 244, 246] } },
         { content: `${sessionDate}${note.session_time ? ` (${note.session_time})` : ""}` },
       ],
       [
-        { content: "Counsellor:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+        { content: "Counsellor:", styles: { fontStyle: "bold" as const, fillColor: [243, 244, 246] } },
         { content: note.counsellor_name || "Unspecified" },
-        { content: "Next Session:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+        { content: "Next Session:", styles: { fontStyle: "bold" as const, fillColor: [243, 244, 246] } },
         { content: note.next_session_date || "To be scheduled" },
       ],
       ...(note.areas_to_focus
         ? [[
-            { content: "Focus Areas:", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } },
+            { content: "Focus Areas:", styles: { fontStyle: "bold" as const, fillColor: [243, 244, 246] } },
             { content: note.areas_to_focus, colSpan: 3 },
           ]]
         : []),
-    ],
+    ] as any,
     theme: "grid",
     styles: {
       fontSize: 8,
@@ -227,7 +226,7 @@ export const exportSoapNotePDF = async ({ note, client, toast }: ExportSingleSoa
 
     for (const cfg of configs) {
       const doc = await buildSinglePageSoapPDF(note, client, cfg);
-      if (doc.internal.getNumberOfPages() === 1) {
+      if (doc.getNumberOfPages() === 1) {
         chosenDoc = doc;
         break;
       }
@@ -237,8 +236,8 @@ export const exportSoapNotePDF = async ({ note, client, toast }: ExportSingleSoa
     // build with the smallest config and prune any trailing pages to guarantee exactly 1 page.
     if (!chosenDoc) {
       chosenDoc = await buildSinglePageSoapPDF(note, client, configs[configs.length - 1]);
-      while (chosenDoc.internal.getNumberOfPages() > 1) {
-        chosenDoc.deletePage(chosenDoc.internal.getNumberOfPages());
+      while (chosenDoc.getNumberOfPages() > 1) {
+        chosenDoc.deletePage(chosenDoc.getNumberOfPages());
       }
     }
 
@@ -306,13 +305,13 @@ export const exportAllSoapNotesPDF = async ({ notes, client, toast }: ExportAllS
     // Overview Table
     autoTable(doc, {
       startY: currentY,
-      head: [[{ content: `Client Overview & Session History (${notes.length} Total Sessions)`, colSpan: 2, styles: { fillColor: [234, 88, 12], textColor: 255, fontStyle: "bold" } }]],
+      head: [[{ content: `Client Overview & Session History (${notes.length} Total Sessions)`, colSpan: 2, styles: { fillColor: [234, 88, 12], textColor: 255, fontStyle: "bold" as const } }]],
       body: [
-        [{ content: "Client Name", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, clientName],
-        [{ content: "Client ID", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, clientId || "N/A"],
-        [{ content: "Status", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, client?.status || "Active"],
-        [{ content: "Total SOAP Notes", styles: { fontStyle: "bold", fillColor: [243, 244, 246] } }, `${notes.length} sessions recorded`],
-      ],
+        [{ content: "Client Name", styles: { fontStyle: "bold" as const, fillColor: [243, 244, 246] } }, clientName],
+        [{ content: "Client ID", styles: { fontStyle: "bold" as const, fillColor: [243, 244, 246] } }, clientId || "N/A"],
+        [{ content: "Status", styles: { fontStyle: "bold" as const, fillColor: [243, 244, 246] } }, client?.status || "Active"],
+        [{ content: "Total SOAP Notes", styles: { fontStyle: "bold" as const, fillColor: [243, 244, 246] } }, `${notes.length} sessions recorded`],
+      ] as any,
       theme: "grid",
       styles: { fontSize: 9, cellPadding: 2.2 },
       columnStyles: { 0: { cellWidth: 42 }, 1: { cellWidth: "auto" } },
