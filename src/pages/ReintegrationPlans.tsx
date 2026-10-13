@@ -1,11 +1,11 @@
 import { useState, useEffect } from"react";
 import { useNavigate } from"react-router-dom";
 import { supabase } from"@/integrations/supabase/client";
-import { MapPin, Plus, Edit, Trash2, FileText, User } from"lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
-import { Button } from"@/components/ui/button";
-import { Badge } from"@/components/ui/badge";
-import { Avatar, AvatarFallback } from"@/components/ui/avatar";
+import { Plus, FileText, User } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
  Select,
  SelectContent,
@@ -116,8 +116,9 @@ const ReintegrationPlans = () => {
  }
  };
 
- const availableClients = clients.filter(client =>
- !clientsWithVisits.some(visited => visited.id === client.id)
+ // Only show clients who do not yet have a reintegration plan
+ const availableClients = clients.filter(
+ client => !clientsWithVisits.some(visited => visited.id === client.id)
  );
 
 

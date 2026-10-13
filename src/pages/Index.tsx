@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Home, Calendar, TrendingUp, Medal, Activity, ArrowUpRight, ChevronDown, Briefcase, Heart, MessageCircle, GraduationCap, Shield, Stethoscope } from "lucide-react";
+import { Users, Home, Calendar, TrendingUp, Medal, Activity, ArrowUpRight, Briefcase, Heart, MessageCircle, GraduationCap, Shield, Stethoscope } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDashboardStats, DateRangeFilter } from "@/hooks/useDashboardStats";
 

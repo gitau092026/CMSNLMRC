@@ -1,7 +1,7 @@
 import { useState, useEffect } from"react";
 import { useNavigate } from"react-router-dom";
 import { supabase } from"@/integrations/supabase/client";
-import { ClipboardList, Plus, FileText, User, Clock, Edit, Trash2 } from"lucide-react";
+import { ClipboardList, Plus, FileText, Clock, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
 import { Button } from"@/components/ui/button";
 import { Badge } from"@/components/ui/badge";
@@ -29,7 +29,6 @@ const CasePlans = () => {
  const [clients, setClients] = useState<any[]>([]);
  const [draftPlans, setDraftPlans] = useState<DraftCasePlan[]>([]);
  const [activePlans, setActivePlans] = useState<any[]>([]);
- const [loading, setLoading] = useState(true);
 
  useEffect(() => {
  fetchClients();
@@ -52,8 +51,6 @@ const CasePlans = () => {
  description: error.message,
  variant:"destructive"
  });
- } finally {
- setLoading(false);
  }
  };
 
@@ -137,7 +134,7 @@ const CasePlans = () => {
 
  // 4. Fetch Active (Completed) Plans
  try {
- const { data: dbActive, error } = await (supabase as any)
+ const { data: dbActive } = await (supabase as any)
  .from('case_plans')
  .select(`
  id,
