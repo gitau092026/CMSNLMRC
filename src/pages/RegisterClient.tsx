@@ -4,10 +4,10 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
-  User, Calendar, Cake, Users, Hash, Shield, UserCircle, UserCircle2,
-  FileText, Activity, AlertTriangle, Baby, MapPin, Phone, School,
-  Brain, Heart, Save, CheckSquare, ArrowRight, ArrowLeft, Plus, Trash2,
-  Search, ChevronDown, X, Edit
+  User, Users, Shield, UserCircle,
+  FileText, Activity, School,
+  Brain, CheckSquare, ArrowRight, ArrowLeft, Plus, Trash2,
+  Search, ChevronDown, Edit
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -247,9 +247,8 @@ const formSchema = z.object({
 const RegisterClient = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeClientId, setActiveClientId] = useState<string | null>(searchParams.get('clientId'));
-  const mode = searchParams.get('mode');
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -407,8 +406,11 @@ const RegisterClient = () => {
 
   useEffect(() => {
     fetchAllClients();
+  }, []);
+
+  useEffect(() => {
     const clientIdFromUrl = searchParams.get('clientId');
-    if (clientIdFromUrl) {
+    if (clientIdFromUrl && (!selectedClientSummary || selectedClientSummary.id !== clientIdFromUrl)) {
       setActiveClientId(clientIdFromUrl);
       fetchClientData(clientIdFromUrl);
     }
@@ -439,11 +441,11 @@ const RegisterClient = () => {
     setShowClientDropdown(false);
     setClientSearch("");
     
-    // Update URL
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set('clientId', clientId);
-    newUrl.searchParams.set('mode', 'edit');
-    window.history.replaceState({}, '', newUrl.toString());
+    // Update URL via React Router search params
+    setSearchParams({ clientId, mode: 'edit' });
+    
+    // Immediately fetch and populate client assessment data
+    fetchClientData(clientId);
   };
 
   const fetchClientData = async (clientId: string = activeClientId as string) => {
@@ -456,7 +458,6 @@ const RegisterClient = () => {
         setSelectedClientSummary(data);
         const extraData = safeJsonParse(data.notes);
         const assessmentFields = extraData.assessmentData || {};
-        const realNotes = extraData.notes ?? "";
         form.reset({
           firstName: data.name?.split(' ')[0] || "",
           secondName: data.name?.split(' ').slice(1).join(' ') || "",
@@ -515,15 +516,6 @@ const RegisterClient = () => {
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally { setLoading(false); }
-  };
-
-  const calculateAge = (dob: string) => {
-    if (!dob) return "";
-    const birthDate = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) age--;
-    return age.toString();
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>, shouldNavigate = true) => {
@@ -710,52 +702,58 @@ const RegisterClient = () => {
                 </Label>
                 <div className="relative">
                   <div 
-                    className="flex items-center justify-between border rounded-md p-3 cursor-pointer hover:border-primary transition-colors"
+                    className="flex items-center justify-between border rounded-md p-3 cursor-pointer hover:border-primary transition-colors bg-white"
                     onClick={() => setShowClientDropdown(!showClientDropdown)}
                   >
-                    <span className={activeClientId ? "text-foreground font-medium" : "text-muted-foreground"}>
-                      {activeClientId && selectedClientSummary 
+                    <span className={activeClientId && selectedClientSummary ? "text-foreground font-medium" : "text-muted-foreground"}>
+                      {selectedClientSummary 
                         ? `${selectedClientSummary.name} (${selectedClientSummary.intake_number || selectedClientSummary.client_id})` 
-                        : ""}
+                        : activeClientId && loading
+                        ? "Loading client details..."
+                        : "Choose a client to assess..."}
                     </span>
                     <ChevronDown className={`h-4 w-4 transition-transform ${showClientDropdown ? "rotate-180" : ""}`} />
                   </div>
                   
                   {showClientDropdown && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto z-50">
-                      <div className="p-2 sticky top-0 bg-white border-b">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder=""
-                            value={clientSearch}
-                            onChange={(e) => setClientSearch(e.target.value)}
-                            className="pl-8"
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowClientDropdown(false)} />
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto z-50">
+                        <div className="p-2 sticky top-0 bg-white border-b z-10">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Search client by name or ID..."
+                              value={clientSearch}
+                              onChange={(e) => setClientSearch(e.target.value)}
+                              className="pl-8"
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="p-1">
+                          {allClients
+                            .filter(c => 
+                              c.name.toLowerCase().includes(clientSearch.toLowerCase()) || 
+                              (c.intake_number || c.client_id || "").toLowerCase().includes(clientSearch.toLowerCase())
+                            )
+                            .map(client => (
+                              <div 
+                                key={client.id}
+                                className="p-3 hover:bg-muted cursor-pointer rounded-sm flex flex-col transition-colors"
+                                onClick={() => handleSelectClient(client.id)}
+                              >
+                                <span className="font-medium text-foreground">{client.name}</span>
+                                <span className="text-xs text-muted-foreground">ID: {client.intake_number || client.client_id} | Admitted: {client.admission_date ? new Date(client.admission_date).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            ))}
+                          {allClients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.intake_number || c.client_id || "").toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
+                            <div className="p-3 text-sm text-muted-foreground text-center">No clients found</div>
+                          )}
                         </div>
                       </div>
-                      <div className="p-1">
-                        {allClients
-                          .filter(c => 
-                            c.name.toLowerCase().includes(clientSearch.toLowerCase()) || 
-                            (c.intake_number || c.client_id || "").toLowerCase().includes(clientSearch.toLowerCase())
-                          )
-                          .map(client => (
-                            <div 
-                              key={client.id}
-                              className="p-3 hover:bg-muted cursor-pointer rounded-sm flex flex-col"
-                              onClick={() => handleSelectClient(client.id)}
-                            >
-                              <span className="font-medium">{client.name}</span>
-                              <span className="text-xs text-muted-foreground">ID: {client.intake_number || client.client_id} | Admitted: {client.admission_date ? new Date(client.admission_date).toLocaleDateString() : 'N/A'}</span>
-                            </div>
-                          ))}
-                        {allClients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.intake_number || c.client_id || "").toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
-                          <div className="p-3 text-sm text-muted-foreground text-center">No clients found</div>
-                        )}
-                      </div>
-                    </div>
+                    </>
                   )}
                 </div>
               </div>

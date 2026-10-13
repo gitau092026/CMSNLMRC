@@ -6,8 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ClientAvatar } from "@/components/ClientAvatar";
 import { getCachedClient, setCachedClient } from "@/lib/clientCache";
 import { cn } from "@/lib/utils";
@@ -18,23 +16,16 @@ import { drawPDFHeader } from "@/utils/pdfHeader";
 import {
     User,
     Calendar,
-    MapPin,
-    Phone,
     Edit,
-    ArrowRight,
     ClipboardList,
-    Clock,
     Briefcase,
     Users,
     FileText,
     ArrowLeft,
-    Cake,
-    UserCircle,
     GraduationCap,
     Shield,
     Heart,
     Home,
-    ChevronDown,
     AlertTriangle,
     BookOpen,
     Download,
