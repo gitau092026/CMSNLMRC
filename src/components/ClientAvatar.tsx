@@ -12,7 +12,6 @@ interface ClientAvatarProps {
   className?: string;
   sizeClassName?: string;
   iconClassName?: string;
-  fallbackInitials?: string;
   priority?: boolean;
 }
 

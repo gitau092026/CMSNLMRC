@@ -15,10 +15,10 @@ import {
   GraduationCap,
   Home,
   Phone,
-  Sparkles,
   UserCircle,
 } from "lucide-react";
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { drawPDFHeader } from "@/utils/pdfHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ const ClientReintegrationPlans = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [client, setClient] = useState<any>(null);
+  const [admissionDetails, setAdmissionDetails] = useState<any>(null);
   const [homeVisits, setHomeVisits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -64,6 +65,14 @@ const ClientReintegrationPlans = () => {
 
       if (clientError) throw clientError;
       setClient(clientData);
+
+      // Fetch admission details for enriched client info
+      const { data: admissionData } = await supabase
+        .from('client_admission_details')
+        .select('*')
+        .eq('client_id', clientId)
+        .single();
+      if (admissionData) setAdmissionDetails(admissionData);
 
       // Fetch all home visits for this client
       const { data: visitsData, error: visitsError } = await supabase
@@ -111,190 +120,184 @@ const ClientReintegrationPlans = () => {
 
   const handleExportPDF = async (singleVisit?: any) => {
     try {
-      const doc = new jsPDF();
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-      // Determine which visits to export
-      // Check if singleVisit is a valid visit object (has id), otherwise export all
       const visitsToExport = (singleVisit && singleVisit.visit_date) ? [singleVisit] : homeVisits;
 
       const headerBottomY = await drawPDFHeader({
         doc,
-        title: "Reintegration Plans Report",
+        title: "Reintegration Plan Report",
         clientName: client?.name,
         clientId: client?.client_id,
         clientStatus: client?.status,
         profilePictureUrl: client?.profile_picture,
       });
 
-      let yPos = headerBottomY + 10;
-      const pageWidth = doc.internal.pageSize.getWidth();
+      let yPos = headerBottomY + 5;
+      const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.getHeight();
-      const leftMargin = 16;
-      const contentWidth = pageWidth - leftMargin * 2;
-
-      const ensureSpace = (needed: number) => {
-        if (yPos + needed > pageHeight - 22) {
-          doc.addPage();
-          yPos = 22;
-        }
-      };
+      const leftMargin = 14;
+      const rightMargin = 14;
+      const contentWidth = pageWidth - leftMargin - rightMargin;
 
       const fmtDate = (d?: string | null) =>
-        d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : null;
+        d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "—";
 
-      // Section heading with orange accent bar and rule
-      const drawSectionTitle = (title: string) => {
-        ensureSpace(18);
-        yPos += 5;
-        doc.setFillColor(249, 115, 22);
-        doc.rect(leftMargin, yPos - 3.6, 3, 6.4, "F");
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10.5);
-        doc.setTextColor(194, 65, 12); // orange-700
-        doc.text(title.toUpperCase(), leftMargin + 6, yPos + 1);
-        yPos += 5.4;
-        doc.setDrawColor(254, 215, 170); // orange-200
-        doc.setLineWidth(0.3);
-        doc.line(leftMargin, yPos, pageWidth - leftMargin, yPos);
-        yPos += 5;
-      };
+      const sectionGap = 4;
+      const cellPad = { top: 2.5, bottom: 2.5, left: 4, right: 4 };
 
-      // Bold label directly followed by wrapped paragraph text (report style)
-      const drawParagraph = (label: string, value?: string | null) => {
-        const v = (value ?? "").toString().trim();
-        if (!v) return;
-        ensureSpace(12);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9.5);
-        doc.setTextColor(71, 85, 105); // slate-600
-        doc.text(label, leftMargin, yPos);
-        yPos += 4.8;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.setTextColor(30, 41, 59); // slate-800
-        const lines: string[] = doc.splitTextToSize(v, contentWidth - 2);
-        lines.forEach((line) => {
-          ensureSpace(5);
-          doc.text(line, leftMargin + 1, yPos);
-          yPos += 4.7;
+      const drawSection = (label: string, rows: [string, string][], accentColor: [number, number, number]) => {
+        if (!rows.length) return;
+        const gridHead = [[
+          { content: label, styles: { fillColor: accentColor, textColor: 255, fontStyle: "bold", fontSize: 8, cellPadding: { top: 2, bottom: 2, left: 5, right: 5 } } }
+        ]];
+        const gridBody = rows.map(([k, v]) => [
+          { content: k, styles: { fontStyle: "bold", fillColor: [243, 244, 246], fontSize: 8, cellPadding: cellPad, textColor: [71, 85, 105] } },
+          { content: v, styles: { fillColor: [254, 254, 255], fontSize: 8.5, cellPadding: cellPad, textColor: [31, 41, 59] } }
+        ]);
+        autoTable(doc, {
+          startY: yPos,
+          head: gridHead,
+          body: gridBody,
+          theme: "grid",
+          styles: { fontSize: 8, lineColor: [226, 232, 240], lineWidth: 0.2 },
+          columnStyles: { 0: { cellWidth: 55 }, 1: { cellWidth: "auto" } },
+          margin: { left: leftMargin, right: rightMargin },
+          tableWidth: contentWidth,
         });
-        yPos += 2.6;
+        yPos = (doc as any).lastAutoTable.finalY + sectionGap;
       };
 
-      // Compact field: small caps label above wrapped value
-      const drawInlineField = (label: string, value: string | null, x: number, width: number) => {
-        if (!value) return;
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(8.5);
-        doc.setTextColor(100, 116, 139); // slate-500
-        doc.text(label.toUpperCase(), x, yPos);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.setTextColor(15, 23, 42); // slate-900
-        const lines: string[] = doc.splitTextToSize(value, width);
-        doc.text(lines, x, yPos + 4.6);
+      const drawNarrative = (label: string, content: string, accentColor: [number, number, number]) => {
+        const trimmed = (content ?? "").trim();
+        if (!trimmed) return;
+        autoTable(doc, {
+          startY: yPos,
+          head: [[
+            { content: label, styles: { fillColor: accentColor, textColor: 255, fontStyle: "bold", fontSize: 8, cellPadding: { top: 2, bottom: 2, left: 5, right: 5 } } }
+          ]],
+          body: [[
+            { content: trimmed, styles: { fillColor: [254, 254, 255], fontSize: 9, cellPadding: { top: 4, bottom: 4, left: 5, right: 5 }, textColor: [31, 41, 59], overflow: "linebreak" } }
+          ]],
+          theme: "grid",
+          styles: { lineColor: [226, 232, 240], lineWidth: 0.2 },
+          margin: { left: leftMargin, right: rightMargin },
+          tableWidth: contentWidth,
+          columnStyles: { 0: { cellWidth: "auto" } },
+        });
+        yPos = (doc as any).lastAutoTable.finalY + sectionGap;
       };
 
       visitsToExport.forEach((visit, index) => {
-        // Start each plan on its own page for a clean report layout
-        if (index > 0) {
-          doc.addPage();
-          yPos = 22;
-        }
+        if (index > 0) { doc.addPage(); yPos = 20; }
 
         // ---- Plan banner ----
-        ensureSpace(18);
-        doc.setFillColor(255, 247, 237); // orange-50
-        doc.setDrawColor(249, 115, 22);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(leftMargin, yPos - 5, contentWidth, 13, 2, 2, "FD");
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.setTextColor(154, 52, 18); // orange-800
-        doc.text("REINTEGRATION PLAN", leftMargin + 5, yPos + 3);
-        if (visit.visit_date) {
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          doc.setTextColor(194, 65, 12);
-          doc.text(fmtDate(visit.visit_date) || "", pageWidth - leftMargin - 5, yPos + 3, { align: "right" });
-        }
-        yPos += 14;
+        autoTable(doc, {
+          startY: yPos,
+          head: [[
+            { content: `REINTEGRATION PLAN  —  ${fmtDate(visit.visit_date)}`, styles: { fillColor: [249, 115, 22], textColor: 255, fontStyle: "bold", fontSize: 10.5, cellPadding: { top: 3.5, bottom: 3.5, left: 6, right: 6 } } }
+          ]],
+          body: [[]],
+          theme: "grid",
+          styles: { lineColor: [249, 115, 22], lineWidth: 0.5 },
+          margin: { left: leftMargin, right: rightMargin },
+          tableWidth: contentWidth,
+        });
+        yPos = (doc as any).lastAutoTable.finalY + sectionGap + 1;
 
-        // ---- Plan overview (compact meta grid) ----
-        const location = [visit.village, visit.subcounty, visit.county].filter(Boolean).join(", ") || null;
-        const metaColWidth = (contentWidth - 8) / 2;
-        const metaRightX = leftMargin + metaColWidth + 8;
+        // ---- 1. ASSESSMENT REPORT (full narrative) ----
+        drawNarrative("Assessment Report / Feedback", visit.assessment_report, [14, 116, 139]);
 
-        drawInlineField("Caseworker", visit.caseworker_name, leftMargin, metaColWidth);
-        drawInlineField("Location", location, metaRightX, metaColWidth);
-        yPos += 12;
-        drawInlineField("Disability Status", visit.disability_status, leftMargin, metaColWidth);
-        drawInlineField("Date of Exit", fmtDate(visit.date_of_exit), metaRightX, metaColWidth);
-        if (visit.caseworker_name || location || visit.disability_status || visit.date_of_exit) {
-          yPos += 14;
+        // ---- 2. KEY CONTACTS ----
+        if ((visit.key_contacts ?? "").trim()) {
+          const contactsRows: [string, string][] = [
+            ["Key Contacts", visit.key_contacts]
+          ];
+          drawSection("Key Contacts", contactsRows, [14, 116, 139]);
         }
 
-        // ---- Narrative sections ----
-        const hasText = (v: any) => (v ?? "").toString().trim().length > 0;
+        // ---- 3. PLANNED REINTEGRATION ACTIVITIES (full narrative) ----
+        drawNarrative("Planned Reintegration Activities & Summary", visit.reintegration_plans, [22, 163, 74]);
 
-        if (hasText(visit.assessment_report) || hasText(visit.key_contacts)) {
-          drawSectionTitle("Assessment");
-          drawParagraph("Assessment Report", visit.assessment_report);
-          drawParagraph("Key Contacts", visit.key_contacts);
+        // ---- 4. REINTEGRATION RECOMMENDATIONS ----
+        if ((visit.reintegration_recommendations ?? "").trim()) {
+          drawNarrative("Reintegration Recommendations", visit.reintegration_recommendations, [22, 163, 74]);
         }
 
-        if (hasText(visit.reintegration_plans) || hasText(visit.nature_of_reintegration)) {
-          drawSectionTitle("Reintegration Plan");
-          drawParagraph("Planned Reintegration Activities", visit.reintegration_plans);
-          drawParagraph("Nature of Reintegration", visit.nature_of_reintegration);
+        // ---- 5. NATURE OF REINTEGRATION ----
+        if ((visit.nature_of_reintegration ?? "").trim()) {
+          drawNarrative("Nature of Reintegration", visit.nature_of_reintegration, [22, 163, 74]);
         }
 
-        if (hasText(visit.proposed_caregivers) || hasText(visit.caregiver_relationship) || hasText(visit.caregiver_contacts)) {
-          drawSectionTitle("Caregiver & Placement");
-          drawParagraph("Proposed Caregiver(s)", visit.proposed_caregivers);
-          drawParagraph("Relationship to Client", visit.caregiver_relationship);
-          drawParagraph("Caregiver Contacts", visit.caregiver_contacts);
-        }
+        // ---- 6. CAREGIVER & PLACEMENT ----
+        const caregiverRows: [string, string][] = [];
+        if ((visit.proposed_caregivers ?? "").trim()) caregiverRows.push(["Proposed Caregiver(s)", visit.proposed_caregivers]);
+        if ((visit.caregiver_relationship ?? "").trim()) caregiverRows.push(["Caregiver Relationship", visit.caregiver_relationship]);
+        if ((visit.caregiver_contacts ?? "").trim()) caregiverRows.push(["Caregiver Contacts", visit.caregiver_contacts]);
+        if ((visit.reintegration_location ?? "").trim()) caregiverRows.push(["Reintegration Location", visit.reintegration_location]);
+        if ((visit.village ?? "").trim()) caregiverRows.push(["Village", visit.village]);
+        if ((visit.subcounty ?? "").trim()) caregiverRows.push(["Sub-county", visit.subcounty]);
+        if ((visit.county ?? "").trim()) caregiverRows.push(["County", visit.county]);
+        if (caregiverRows.length) drawSection("Caregiver & Placement Details", caregiverRows, [79, 70, 229]);
 
-        if (hasText(visit.course_placement_plans)) {
-          drawSectionTitle("Education & Training");
-          drawParagraph("Course / School Placement Plans", visit.course_placement_plans);
-        }
+        // ---- 7. EDUCATION & TRAINING ----
+        drawNarrative("Education & Training / Course Placement Plans", visit.course_placement_plans, [147, 51, 234]);
 
-        if (hasText(visit.family_interventions) || hasText(visit.aftercare_followup_plan) || hasText(visit.reintegration_recommendations)) {
-          drawSectionTitle("Support & Follow-up");
-          drawParagraph("Family / Household Interventions", visit.family_interventions);
-          drawParagraph("Individual Aftercare Follow-up Plan", visit.aftercare_followup_plan);
-          drawParagraph("Recommendations", visit.reintegration_recommendations);
-        }
+        // ---- 8. FAMILY / HOUSEHOLD INTERVENTIONS ----
+        drawNarrative("Family / Household Interventions", visit.family_interventions, [14, 116, 139]);
+
+        // ---- 9. AFTERCARE FOLLOW-UP PLAN ----
+        drawNarrative("Individual Aftercare Follow-up Plan", visit.aftercare_followup_plan, [249, 115, 22]);
+
+        // ---- 10. REFERRAL & ADMISSION BACKGROUND (from admission details) ----
+        const referralRows: [string, string][] = [];
+        if ((admissionDetails?.pre_admission_living ?? "").trim()) referralRows.push(["Pre-Admission Living Situation", admissionDetails.pre_admission_living]);
+        if ((admissionDetails?.committal_order_no ?? "").trim()) referralRows.push(["Committal Order No.", admissionDetails.committal_order_no]);
+        if ((admissionDetails?.committal_date ?? "").trim()) referralRows.push(["Committal Date", fmtDate(admissionDetails.committal_date)]);
+        if ((admissionDetails?.admission_order_issued ?? "").trim()) referralRows.push(["Admission Order Issued", admissionDetails.admission_order_issued]);
+        if ((admissionDetails?.placement_order_no ?? "").trim()) referralRows.push(["Placement Order No.", admissionDetails.placement_order_no]);
+
+        const fmtJson = (val: unknown): string => {
+          if (!val) return "—";
+          if (Array.isArray(val)) return val.filter(Boolean).join(", ");
+          if (typeof val === "object") return JSON.stringify(val).replace(/[{}"]/g, "").replace(/_/g, " ");
+          return String(val);
+        };
+
+        if (admissionDetails?.vulnerability_type) referralRows.push(["Vulnerability Type", fmtJson(admissionDetails.vulnerability_type)]);
+        if (admissionDetails?.reasons_for_admission_list) referralRows.push(["Reasons for Admission", fmtJson(admissionDetails.reasons_for_admission_list)]);
+        if ((admissionDetails?.vulnerability_location_separation ?? "").trim()) referralRows.push(["Separation Location", admissionDetails.vulnerability_location_separation]);
+        if ((admissionDetails?.vulnerability_location_street ?? "").trim()) referralRows.push(["Street-level Location", admissionDetails.vulnerability_location_street]);
+        if (admissionDetails?.current_care_placement_type) referralRows.push(["Current Care Placement Type", fmtJson(admissionDetails.current_care_placement_type)]);
+        if ((admissionDetails?.current_care_provider_name ?? "").trim()) referralRows.push(["Care Provider Name", admissionDetails.current_care_provider_name]);
+        if ((admissionDetails?.current_care_provider_reg ?? "").trim()) referralRows.push(["Care Provider Registration", admissionDetails.current_care_provider_reg]);
+        if ((admissionDetails?.current_care_provider_phone ?? "").trim()) referralRows.push(["Care Provider Phone", admissionDetails.current_care_provider_phone]);
+        if ((admissionDetails?.current_care_placement_other ?? "").trim()) referralRows.push(["Placement Other Details", admissionDetails.current_care_placement_other]);
+        if ((admissionDetails?.reasons_for_admission_other ?? "").trim()) referralRows.push(["Reasons for Admission (Other)", admissionDetails.reasons_for_admission_other]);
+        if ((admissionDetails?.history_of_placements_notes ?? "").trim()) referralRows.push(["History of Placements", admissionDetails.history_of_placements_notes]);
+        if (referralRows.length) drawSection("Referral & Admission Background", referralRows, [71, 85, 105]);
       });
 
-      // ---- Footer with page numbers on every page ----
-      const totalPages: number = doc.getNumberOfPages();
+      // ---- Footer on every page ----
+      const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setDrawColor(226, 232, 240);
         doc.setLineWidth(0.3);
-        doc.line(leftMargin, pageHeight - 14, pageWidth - leftMargin, pageHeight - 14);
+        doc.line(leftMargin, pageHeight - 12, pageWidth - rightMargin, pageHeight - 12);
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
+        doc.setFontSize(7.5);
         doc.setTextColor(148, 163, 184);
-        doc.text("Confidential - New Life Mwangaza Rehabilitation Centre", leftMargin, pageHeight - 9);
-        doc.text(`Page ${i} of ${totalPages}`, pageWidth - leftMargin, pageHeight - 9, { align: "right" });
+        doc.text("Confidential — New Life Mwangaza Rehabilitation Centre", leftMargin, pageHeight - 7.5);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - rightMargin, pageHeight - 7.5, { align: "right" });
       }
 
       const isSingle = visitsToExport.length === 1;
-      const dateSuffix = isSingle && visitsToExport[0]?.visit_date
-        ? `_${visitsToExport[0].visit_date}`
-        : '';
-      doc.save(`Reintegration_Plans_${client?.name || 'Client'}${dateSuffix}.pdf`);
+      const dateSuffix = isSingle && visitsToExport[0]?.visit_date ? `_${visitsToExport[0].visit_date}` : "";
+      doc.save(`Reintegration_Plan_${client?.name || "Client"}${dateSuffix}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate PDF with logo",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to generate PDF", variant: "destructive" });
     }
   };
 

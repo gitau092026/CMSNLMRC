@@ -477,7 +477,6 @@ const AddCasePlan = () => {
  };
 
  // Save individual section (wrapper)
- // Save individual section (wrapper)
  const saveSection = async (sectionName: string) => {
  setSavingSection(sectionName);
  try {
