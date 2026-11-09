@@ -1,7 +1,5 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Briefcase } from "lucide-react";
 
 interface ChartData {
   name: string;
@@ -42,7 +40,7 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   if (percent < 0.06) return null;
   return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={700}>
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700}>
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
@@ -58,84 +56,74 @@ export function AftercareChart({ data, loading }: AftercareChartProps) {
   const awaitingTotal = enriched.find(d => d.name === "Awaiting Placement")?.value || 0;
   const hasData = enriched.length > 0 && total > 0;
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[200px]">
+        <Skeleton className="h-[140px] w-[140px] rounded-full" />
+      </div>
+    );
+  }
+
+  if (!hasData) {
+    return (
+      <div className="h-[200px] flex flex-col items-center justify-center text-slate-300 border-2 border-dashed rounded-xl border-slate-100">
+        <p className="text-sm font-medium text-slate-400">No placement data</p>
+      </div>
+    );
+  }
+
   return (
-    <Card className="border border-slate-100 shadow-sm rounded-2xl overflow-hidden bg-white h-full">
-      <CardHeader className="pb-2 px-5 pt-5 border-b border-slate-50">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 bg-sky-50 rounded-lg">
-            <Briefcase className="h-4 w-4 text-sky-600" />
+    <div>
+      <div className="h-[180px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={enriched}
+              cx="50%"
+              cy="50%"
+              innerRadius={46}
+              outerRadius={80}
+              paddingAngle={3}
+              dataKey="value"
+              labelLine={false}
+              label={renderCustomLabel}
+              animationDuration={700}
+            >
+              {enriched.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-2 space-y-1 border-t border-slate-100 pt-2">
+        {enriched.map((entry) => (
+          <div key={entry.name} className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: entry.color }} />
+              <span className="text-[11px] font-medium text-slate-500 truncate max-w-[130px]" title={entry.name}>{entry.name}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-slate-800">{entry.value}</span>
+              <span className="text-[10px] text-slate-400 w-7 text-right font-medium">
+                {total > 0 ? `${Math.round((entry.value / total) * 100)}%` : "0%"}
+              </span>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">Nature of Placements</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Alumni placement status & types</p>
+        ))}
+        <div className="flex items-center justify-between border-t border-slate-100 pt-1.5 mt-1">
+          <span className="text-[11px] font-semibold text-slate-400">Total Alumni</span>
+          <div className="text-right">
+            <span className="text-[11px] font-extrabold text-slate-800">{total}</span>
+            {awaitingTotal > 0 && (
+              <span className="text-[10px] text-slate-400 ml-1 font-medium">
+                ({placedTotal} placed, {awaitingTotal} awaiting)
+              </span>
+            )}
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="px-5 pb-5 pt-3">
-        {loading ? (
-          <div className="flex items-center justify-center h-[260px]">
-            <Skeleton className="h-[150px] w-[150px] rounded-full" />
-          </div>
-        ) : hasData ? (
-          <>
-            <div className="h-[180px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={enriched}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={82}
-                    paddingAngle={3}
-                    dataKey="value"
-                    labelLine={false}
-                    label={renderCustomLabel}
-                    animationDuration={700}
-                  >
-                    {enriched.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-3 space-y-1.5 border-t border-slate-50 pt-3">
-              {enriched.map((entry) => (
-                <div key={entry.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entry.color }} />
-                    <span className="text-xs font-medium text-slate-500 truncate max-w-[150px]" title={entry.name}>{entry.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-800">{entry.value}</span>
-                    <span className="text-[10px] text-slate-400 w-9 text-right font-medium">
-                      {total > 0 ? `${Math.round((entry.value / total) * 100)}%` : "0%"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1">
-                <span className="text-xs font-semibold text-slate-400">Total Alumni</span>
-                <div className="text-right">
-                  <span className="text-xs font-extrabold text-slate-800">{total}</span>
-                  {awaitingTotal > 0 && (
-                    <span className="text-[10px] text-slate-400 ml-1.5 font-medium">
-                      ({placedTotal} placed, {awaitingTotal} awaiting)
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="h-[260px] flex flex-col items-center justify-center text-slate-300 border-2 border-dashed rounded-xl border-slate-100">
-            <Briefcase className="h-8 w-8 mb-2 opacity-40" />
-            <p className="text-sm font-medium text-slate-400">No placement data</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

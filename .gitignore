@@ -24,6 +24,8 @@ dist-ssr
 *.sw?
 .claude/
 vite.config.ts.timestamp-*
+supabase/.temp/
+.temp/
 
 # Environment variables
 .env

@@ -32,7 +32,7 @@ const ReintegrationPlans = () => {
  try {
  const { data, error } = await supabase
  .from('clients')
- .select('*')
+ .select('id, name, client_id, status, profile_picture')
  .or('status.ilike.active,status.eq.Complete')
  .order('name');
 
@@ -57,13 +57,14 @@ const ReintegrationPlans = () => {
  clients (
  id,
  name,
- client_id
+ client_id,
+ date_of_birth
  )
  `);
 
  if (error) throw error;
 
- // Fetch full client details for each client with visits
+ // Group visits by client
  const clientMap = new Map();
  data?.forEach((visit: any) => {
  if (visit.clients) {
@@ -78,25 +79,7 @@ const ReintegrationPlans = () => {
  }
  });
 
- const clientIds = Array.from(clientMap.keys());
-
- if (clientIds.length > 0) {
- const { data: fullClientsData, error: clientsError } = await supabase
- .from('clients')
- .select('*')
- .in('id', clientIds);
-
- if (clientsError) throw clientsError;
-
- const enrichedClients = fullClientsData?.map(client => ({
- ...client,
- visitCount: clientMap.get(client.id)?.visitCount || 0
- }));
-
- setClientsWithVisits(enrichedClients || []);
- } else {
- setClientsWithVisits([]);
- }
+ setClientsWithVisits(Array.from(clientMap.values()));
  } catch (error: any) {
  toast({
  title:"Error",

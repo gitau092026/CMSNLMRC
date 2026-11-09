@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { drawPDFHeader } from "@/utils/pdfHeader";
+import { getClientIntake } from "@/utils/intakeUtils";
 
 import {
     User,
@@ -366,6 +367,7 @@ const ClientDetails = () => {
         const basicInfoData = [
             ['Name', client.name],
             ['Client ID', client.client_id],
+            ['Intake / Cohort', getClientIntake(client)],
             ['Status', client.status],
             ['Age', `${client.age} years`],
             ['Gender', client.gender],
@@ -844,6 +846,9 @@ const ClientDetails = () => {
                                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-medium">
                                         {client.client_id}
                                     </Badge>
+                                    <Badge variant="outline" className="border-blue-300 bg-blue-50/70 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 font-medium">
+                                        Intake: {getClientIntake(client)}
+                                    </Badge>
                                     {isActiveStatus(client.status) ? (
                                         <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 border px-3 py-1 text-xs font-semibold shadow-xs flex items-center gap-1.5">
                                             <span className="relative flex h-2 w-2">
@@ -910,6 +915,7 @@ const ClientDetails = () => {
                             <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Age</span><p className="text-sm font-medium text-foreground">{client.age} years</p></div>
                             <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Gender</span><p className="text-sm font-medium text-foreground">{client.gender}</p></div>
                             <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">DOB</span><p className="text-sm font-medium text-foreground">{new Date(client.date_of_birth).toLocaleDateString()}</p></div>
+                            <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Intake / Cohort</span><p className="text-sm font-semibold text-primary">{getClientIntake(client)}</p></div>
                             {client.nickname && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nickname</span><p className="text-sm font-medium text-foreground">{client.nickname}</p></div>}
                             {client.intake_number && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Intake Number</span><p className="text-sm font-medium text-foreground">{client.intake_number}</p></div>}
                             {client.police_ob_number && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Police OB Number</span><p className="text-sm font-medium text-foreground">{client.police_ob_number}</p></div>}

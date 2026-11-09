@@ -3,9 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, User, Download, Search, Clock, StickyNote } from "lucide-react";
+import { Calendar, User, Download, Search, Clock, StickyNote, ArrowLeft } from "lucide-react";
 import { exportSoapNotePDF, exportAllSoapNotesPDF } from "@/utils/exportSoapNotePDF";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -71,22 +69,24 @@ export default function SoapNotes() {
         return;
       }
 
-      // Fetch client details for those IDs
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('id, name, nickname, age, admission_date, status, profile_picture')
-        .in('id', clientIds);
+      // Fetch client details and SOAP notes in parallel
+      const [clientsRes, allNotesRes] = await Promise.all([
+        supabase
+          .from('clients')
+          .select('id, name, nickname, age, admission_date, status, profile_picture')
+          .in('id', clientIds),
+        supabase
+          .from('soap_notes')
+          .select('*')
+          .in('client_id', clientIds)
+          .order('session_date', { ascending: false })
+      ]);
 
-      if (clientsError) throw clientsError;
+      if (clientsRes.error) throw clientsRes.error;
+      if (allNotesRes.error) throw allNotesRes.error;
 
-      // Fetch all SOAP notes for these clients
-      const { data: allNotes, error: allNotesError } = await supabase
-        .from('soap_notes')
-        .select('*')
-        .in('client_id', clientIds)
-        .order('session_date', { ascending: false });
-
-      if (allNotesError) throw allNotesError;
+      const clientsData = clientsRes.data;
+      const allNotes = allNotesRes.data;
 
       // Combine client data with their notes
       const clientsWithNotes: ClientWithNotes[] = (clientsData || []).map(client => ({
@@ -125,6 +125,110 @@ export default function SoapNotes() {
   );
 
   const totalNotes = clients.reduce((sum, c) => sum + c.note_count, 0);
+
+  // If a client is selected, show their SOAP notes as a full page
+  if (viewDialogOpen && selectedClient) {
+    return (
+      <div className="w-full max-w-full overflow-x-hidden">
+        <div className="container mx-auto py-4 sm:py-6 lg:py-8 px-4 sm:px-6 space-y-6 max-w-3xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-4 border-orange-500">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={() => setViewDialogOpen(false)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">SOAP Notes — {selectedClient.name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {selectedClient.note_count} session{selectedClient.note_count !== 1 ? 's' : ''} recorded
+                </p>
+              </div>
+            </div>
+            {selectedClient.soap_notes.length > 0 && (
+              <Button
+                size="sm"
+                onClick={() => handleExportAllSoapNotesPDF(selectedClient)}
+                className="bg-orange-600 hover:bg-orange-700 text-white shrink-0"
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                Export All Notes (PDF)
+              </Button>
+            )}
+          </div>
+
+          {selectedClient.soap_notes.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No SOAP notes found</p>
+          ) : (
+            <div className="space-y-4">
+              {selectedClient.soap_notes.map((note) => (
+                <Card key={note.id} className="border-l-4 border-l-orange-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-orange-500" />
+                        <span className="font-semibold">{note.session_date}</span>
+                        {note.session_time && (
+                          <>
+                            <Clock className="h-4 w-4 ml-2" />
+                            <span>{note.session_time}</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{note.counsellor_name}</Badge>
+                        <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note, selectedClient)}>
+                          <Download className="h-4 w-4 mr-1" />
+                          Export PDF
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {note.subjective && (
+                      <div>
+                        <h4 className="font-semibold text-orange-600 text-sm">SUBJECTIVE</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.subjective}</p>
+                      </div>
+                    )}
+                    {note.objective && (
+                      <div>
+                        <h4 className="font-semibold text-orange-600 text-sm">OBJECTIVE</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.objective}</p>
+                      </div>
+                    )}
+                    {note.assessment && (
+                      <div>
+                        <h4 className="font-semibold text-orange-600 text-sm">ASSESSMENT</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.assessment}</p>
+                      </div>
+                    )}
+                    {note.plan && (
+                      <div>
+                        <h4 className="font-semibold text-orange-600 text-sm">PLAN</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.plan}</p>
+                      </div>
+                    )}
+                    {note.next_session_date && (
+                      <div>
+                        <h4 className="font-semibold text-sm">Next Session</h4>
+                        <p className="text-sm mt-1">{note.next_session_date}</p>
+                      </div>
+                    )}
+                    {note.areas_to_focus && (
+                      <div>
+                        <h4 className="font-semibold text-sm">Areas to Focus</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.areas_to_focus}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-full overflow-x-hidden">
@@ -222,105 +326,6 @@ export default function SoapNotes() {
         </Card>
       </div>
 
-      {/* SOAP Notes View Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh]">
-          <DialogHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 text-left">
-              <div>
-                <DialogTitle className="text-xl font-bold">
-                  SOAP Notes — {selectedClient?.name}
-                </DialogTitle>
-                <DialogDescription className="mt-1">
-                  {selectedClient?.note_count} session{selectedClient?.note_count !== 1 ? 's' : ''} recorded
-                </DialogDescription>
-              </div>
-              {selectedClient && selectedClient.soap_notes.length > 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => handleExportAllSoapNotesPDF(selectedClient)}
-                  className="bg-orange-600 hover:bg-orange-700 text-white shrink-0 self-start sm:self-auto"
-                >
-                  <Download className="h-4 w-4 mr-1.5" />
-                  Export All Notes (PDF)
-                </Button>
-              )}
-            </div>
-          </DialogHeader>
-
-          <ScrollArea className="h-[70vh] pr-4">
-            {selectedClient && selectedClient.soap_notes.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No SOAP notes found</p>
-            ) : (
-              <div className="space-y-4 p-2">
-                {selectedClient?.soap_notes.map((note) => (
-                  <Card key={note.id} className="border-l-4 border-l-orange-500">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-orange-500" />
-                          <span className="font-semibold">{note.session_date}</span>
-                          {note.session_time && (
-                            <>
-                              <Clock className="h-4 w-4 ml-2" />
-                              <span>{note.session_time}</span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{note.counsellor_name}</Badge>
-                          <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note, selectedClient)}>
-                            <Download className="h-4 w-4 mr-1" />
-                            Export PDF
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {note.subjective && (
-                        <div>
-                          <h4 className="font-semibold text-orange-600 text-sm">SUBJECTIVE</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.subjective}</p>
-                        </div>
-                      )}
-                      {note.objective && (
-                        <div>
-                          <h4 className="font-semibold text-orange-600 text-sm">OBJECTIVE</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.objective}</p>
-                        </div>
-                      )}
-                      {note.assessment && (
-                        <div>
-                          <h4 className="font-semibold text-orange-600 text-sm">ASSESSMENT</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.assessment}</p>
-                        </div>
-                      )}
-                      {note.plan && (
-                        <div>
-                          <h4 className="font-semibold text-orange-600 text-sm">PLAN</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.plan}</p>
-                        </div>
-                      )}
-                      {note.next_session_date && (
-                        <div>
-                          <h4 className="font-semibold text-sm">Next Session</h4>
-                          <p className="text-sm mt-1">{note.next_session_date}</p>
-                        </div>
-                      )}
-                      {note.areas_to_focus && (
-                        <div>
-                          <h4 className="font-semibold text-sm">Areas to Focus</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.areas_to_focus}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -13,7 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { compressImage } from "@/utils/imageCompression";
-import { setCachedClient } from "@/lib/clientCache";
+import { setCachedClient, invalidateClientsCache } from "@/lib/clientCache";
+import { invalidateDashboardCache } from "@/hooks/useDashboardStats";
+import { getClientIntake } from "@/utils/intakeUtils";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +51,7 @@ const formSchema = z.object({
   partnerContactPerson: z.string().optional(),
   partnerContact: z.string().optional(),
   admissionDate: z.string().optional(),
+  intake: z.string().optional(),
   intakeNumber: z.string().optional(),
   policeOBNumber: z.string().optional(),
   clientStatus: z.string().optional().default("Active"),
@@ -336,7 +339,7 @@ const RegisterClient = () => {
       firstName: "", secondName: "", dateOfBirth: "", calculatedAge: "", gender: "", nickname: "",
       admissionType: "", admissionTypeDetails: "",
       partnerName: "", partnerContactPerson: "", partnerContact: "", admissionDate: "",
-      intakeNumber: "", policeOBNumber: "", clientStatus: "Active", familyComposition: "",
+      intake: "", intakeNumber: "", policeOBNumber: "", clientStatus: "Active", familyComposition: "",
       siblingsInfo: "", siblingsList: [{ name: "", nickname: "", location: "", education: "", classLevel: "", age: "" }],
       otherRelativesList: [{ name: "", relationship: "", location: "", phone: "" }],
       contactWithFamily: "", contactWithFamilyWhom: "", contactWithFamilyLastVisit: "",
@@ -471,6 +474,7 @@ const RegisterClient = () => {
           partnerContactPerson: data.partner_contact_person || "",
           partnerContact: data.partner_contact || "",
           admissionDate: data.admission_date || "",
+          intake: extraData.intake || assessmentFields.intake || getClientIntake(data) || "",
           intakeNumber: data.intake_number || data.client_id || "",
           policeOBNumber: data.police_ob_number || "",
           clientStatus: data.status || "Active",
@@ -545,9 +549,11 @@ const RegisterClient = () => {
 
       const packedNotes = JSON.stringify({
         ...existingNotesObj,
+        intake: values.intake?.trim() || existingNotesObj.intake || null,
         assessmentData: {
           ...(existingNotesObj.assessmentData || {}),
-          ...assessmentData
+          ...assessmentData,
+          intake: values.intake?.trim() || existingNotesObj.assessmentData?.intake || null
         }
       });
 
@@ -628,6 +634,8 @@ const RegisterClient = () => {
       }
 
       setCachedClient({ ...clientData, id: savedClientId });
+      invalidateClientsCache();
+      invalidateDashboardCache();
 
       toast({ title: "Success", description: shouldNavigate ? "Client & Assessment saved successfully!" : "Progress saved." });
       if (shouldNavigate) {
@@ -784,6 +792,7 @@ const RegisterClient = () => {
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Date of Birth / Age</span><span className="font-medium">{selectedClientSummary.date_of_birth ? new Date(selectedClientSummary.date_of_birth).toLocaleDateString() : 'N/A'} ({selectedClientSummary.age ? `${selectedClientSummary.age} yrs` : 'N/A'})</span></div>
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Gender</span><span className="font-medium">{selectedClientSummary.gender || 'N/A'}</span></div>
                   
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Intake / Cohort</span><span className="font-semibold text-primary">{getClientIntake(selectedClientSummary)}</span></div>
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Client/Intake ID</span><span className="font-medium">{selectedClientSummary.intake_number || selectedClientSummary.client_id || 'N/A'}</span></div>
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Police OB No.</span><span className="font-medium">{selectedClientSummary.police_ob_number || 'N/A'}</span></div>
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Admission Date</span><span className="font-medium">{selectedClientSummary.admission_date ? new Date(selectedClientSummary.admission_date).toLocaleDateString() : 'N/A'}</span></div>
@@ -928,8 +937,18 @@ const RegisterClient = () => {
 
 
 
-                    {/* Other Forms of Admission */}
-                    <div className="space-y-3">
+                    {/* Intake and Placement Form */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="intake" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-semibold">Intake / Cohort</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g. Intake 1, Intake 2024" />
+                          </FormControl>
+                          <FormDescription>Assign or update client's intake cohort</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
                       <FormField control={form.control} name="otherAdmissionForms" render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-base font-semibold">Placement Form</FormLabel>

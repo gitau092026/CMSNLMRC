@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { FileText, StickyNote, LogOut, FolderOpen, Calendar, User, UserPlus, Download, Clock } from "lucide-react";
@@ -378,10 +377,610 @@ export default function Counselling() {
             <h1 className="text-2xl sm:text-3xl font-bold">Counselling Department</h1>
             <p className="text-sm sm:text-base text-muted-foreground">Treatment Plans & Client Records</p>
           </div>
-          <ClientCounsellingRecords 
-            client={selectedRecordsClient} 
-            onBack={() => setSelectedRecordsClient(null)} 
+          <ClientCounsellingRecords
+            client={selectedRecordsClient}
+            onBack={() => setSelectedRecordsClient(null)}
           />
+        </div>
+      </div>
+    );
+  }
+
+  // If adding a SOAP note, show the full-page SOAP form
+  if (soapDialogOpen && soapNoteClient) {
+    return (
+      <div className="w-full max-w-full overflow-x-hidden">
+        <div className="container mx-auto py-4 sm:py-6 lg:py-8 px-4 sm:px-6 space-y-6 max-w-3xl">
+          <div className="flex items-center gap-4 pb-4 border-b-4 border-orange-500">
+            <Button variant="outline" size="sm" onClick={() => setSoapDialogOpen(false)}>
+              ← Back
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">SOAP NOTES</h1>
+              <p className="text-sm text-muted-foreground">Session documentation for {soapNoteClient.name}</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Client and Counsellor Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>CLIENT'S NAME</Label>
+                <Input value={soapNoteClient.name} disabled className="bg-muted font-medium" />
+              </div>
+              <div>
+                <Label>NAME OF COUNSELLOR <span className="text-red-500">*</span></Label>
+                <Input
+                  value={soapFormData.counsellor_name}
+                  onChange={(e) => handleSoapInputChange("counsellor_name", e.target.value)}
+                  placeholder="Enter counsellor name..."
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>DATE</Label>
+                <Input
+                  type="date"
+                  value={soapFormData.session_date}
+                  onChange={(e) => handleSoapInputChange("session_date", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>TIME</Label>
+                <Input
+                  type="time"
+                  value={soapFormData.session_time}
+                  onChange={(e) => handleSoapInputChange("session_time", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <Label className="text-base font-semibold text-orange-600">SUBJECTIVE</Label>
+              <p className="text-xs text-muted-foreground mb-2">What the client reports - their feelings, concerns, symptoms, and perspective</p>
+              <Textarea
+                value={soapFormData.subjective}
+                onChange={(e) => handleSoapInputChange("subjective", e.target.value)}
+                rows={6}
+                placeholder="Document the client's subjective experience, statements, and reported symptoms..."
+                className="resize-none"
+              />
+            </div>
+
+            <div>
+              <Label className="text-base font-semibold text-orange-600">OBJECTIVE</Label>
+              <p className="text-xs text-muted-foreground mb-2">Observable and measurable findings - behavior, appearance, test results</p>
+              <Textarea
+                value={soapFormData.objective}
+                onChange={(e) => handleSoapInputChange("objective", e.target.value)}
+                rows={6}
+                placeholder="Document observable behaviors, appearance, affect, and any measurable data..."
+                className="resize-none"
+              />
+            </div>
+
+            <div>
+              <Label className="text-base font-semibold text-orange-600">ASSESSMENT</Label>
+              <p className="text-xs text-muted-foreground mb-2">Clinical conclusions, diagnosis, and interpretation of findings</p>
+              <Textarea
+                value={soapFormData.assessment}
+                onChange={(e) => handleSoapInputChange("assessment", e.target.value)}
+                rows={5}
+                placeholder="Document your clinical assessment, diagnosis, and interpretation..."
+                className="resize-none"
+              />
+            </div>
+
+            <div>
+              <Label className="text-base font-semibold text-orange-600">PLAN</Label>
+              <p className="text-xs text-muted-foreground mb-2">Treatment plan, interventions, and next steps</p>
+              <Textarea
+                value={soapFormData.plan}
+                onChange={(e) => handleSoapInputChange("plan", e.target.value)}
+                rows={4}
+                placeholder="Document the treatment plan and interventions..."
+                className="resize-none"
+              />
+            </div>
+
+            <Separator />
+
+            <div>
+              <Label className="text-base font-semibold">DATE OF NEXT SESSION</Label>
+              <Input
+                type="date"
+                value={soapFormData.next_session_date}
+                onChange={(e) => handleSoapInputChange("next_session_date", e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+
+            <div>
+              <Label className="text-base font-semibold">AREAS TO FOCUS ATTENTION ON</Label>
+              <Textarea
+                value={soapFormData.areas_to_focus}
+                onChange={(e) => handleSoapInputChange("areas_to_focus", e.target.value)}
+                rows={4}
+                placeholder="Document areas that need special attention in future sessions..."
+                className="resize-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4">
+              <Button variant="outline" onClick={() => setSoapDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSoapSubmit}
+                disabled={submittingSoap}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {submittingSoap ? "Saving..." : "Save SOAP Note"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If viewing SOAP notes for a client, show the full-page view
+  if (viewSoapDialogOpen && viewSoapClient) {
+    return (
+      <div className="w-full max-w-full overflow-x-hidden">
+        <div className="container mx-auto py-4 sm:py-6 lg:py-8 px-4 sm:px-6 space-y-6 max-w-3xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-4 border-orange-500">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={() => setViewSoapDialogOpen(false)}>
+                ← Back
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">SOAP NOTES — {viewSoapClient.name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {viewSoapNotes.length} recorded session{viewSoapNotes.length !== 1 ? 's' : ''} for this client
+                </p>
+              </div>
+            </div>
+            {viewSoapNotes.length > 0 && (
+              <Button
+                size="sm"
+                onClick={() => handleExportAllSoapNotesPDF(viewSoapNotes, viewSoapClient)}
+                className="bg-orange-600 hover:bg-orange-700 text-white shrink-0"
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                Export All Notes (PDF)
+              </Button>
+            )}
+          </div>
+
+          {loadingSoapNotes ? (
+            <p className="text-center text-muted-foreground py-8">Loading notes...</p>
+          ) : viewSoapNotes.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No SOAP notes recorded yet</p>
+          ) : (
+            <div className="space-y-4">
+              {viewSoapNotes.map((note) => (
+                <Card key={note.id} className="border-l-4 border-l-orange-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-orange-500" />
+                        <span className="font-semibold">{note.session_date}</span>
+                        {note.session_time && (
+                          <>
+                            <Clock className="h-4 w-4 ml-2" />
+                            <span>{note.session_time}</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{note.counsellor_name}</Badge>
+                        <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note, viewSoapClient)}>
+                          <Download className="h-4 w-4 mr-1" />
+                          Export PDF
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {note.subjective && (
+                      <div>
+                        <h4 className="font-semibold text-orange-600 text-sm">SUBJECTIVE</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.subjective}</p>
+                      </div>
+                    )}
+                    {note.objective && (
+                      <div>
+                        <h4 className="font-semibold text-orange-600 text-sm">OBJECTIVE</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.objective}</p>
+                      </div>
+                    )}
+                    {note.assessment && (
+                      <div>
+                        <h4 className="font-semibold text-orange-600 text-sm">ASSESSMENT</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.assessment}</p>
+                      </div>
+                    )}
+                    {note.plan && (
+                      <div>
+                        <h4 className="font-semibold text-orange-600 text-sm">PLAN</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.plan}</p>
+                      </div>
+                    )}
+                    {note.next_session_date && (
+                      <div>
+                        <h4 className="font-semibold text-sm">Next Session</h4>
+                        <p className="text-sm mt-1">{note.next_session_date}</p>
+                      </div>
+                    )}
+                    {note.areas_to_focus && (
+                      <div>
+                        <h4 className="font-semibold text-sm">Areas to Focus</h4>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{note.areas_to_focus}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // If processing an exit for a client, show the full-page exit form
+  if (exitDialogOpen && selectedClient) {
+    return (
+      <div className="w-full max-w-full overflow-x-hidden">
+        <div className="container mx-auto py-4 sm:py-6 lg:py-8 px-4 sm:px-6 space-y-6 max-w-4xl">
+          <div className="flex items-center gap-4 pb-4 border-b-4 border-orange-500">
+            <Button variant="outline" size="sm" onClick={() => setExitDialogOpen(false)}>
+              ← Back
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">CLIENT DISCHARGE / EXIT FORM</h1>
+              <p className="text-sm text-muted-foreground">Complete this form to process client discharge</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Date */}
+            <div className="flex justify-end">
+              <div className="w-48">
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={exitFormData.exit_date}
+                  onChange={(e) => handleExitInputChange("exit_date", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Client Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Name of Child / Young Person</Label>
+                <Input value={selectedClient.name} disabled className="bg-muted" />
+              </div>
+              <div>
+                <Label>Also Known As (AKA)</Label>
+                <Input value={selectedClient.nickname || ""} disabled className="bg-muted" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label>Date of Birth</Label>
+                <Input value={selectedClient.date_of_birth || ""} disabled className="bg-muted" />
+              </div>
+              <div>
+                <Label>Client's NLMRC Admission Number</Label>
+                <Input value={selectedClient.intake_number || ""} disabled className="bg-muted" />
+              </div>
+              <div>
+                <Label>Date of Admission</Label>
+                <Input value={selectedClient.admission_date} disabled className="bg-muted" />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Nature of Discharge */}
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base font-semibold">Nature of Discharge</Label>
+                <RadioGroup
+                  value={exitFormData.nature_of_discharge}
+                  onValueChange={(value) => handleExitInputChange("nature_of_discharge", value)}
+                  className="flex gap-6 mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Complete" id="complete" />
+                    <Label htmlFor="complete">Complete</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Incomplete" id="incomplete" />
+                    <Label htmlFor="incomplete">Incomplete</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {exitFormData.nature_of_discharge === "Incomplete" && (
+                <div className="pl-4 border-l-2 border-orange-500">
+                  <Label className="text-sm font-medium">If Incomplete, specify (Tick all that apply)</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                    {["Escapee", "Voluntary discharge", "Early Reintegration", "Involuntary discharge"].map((reason) => (
+                      <div key={reason} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={reason}
+                          checked={exitFormData.incomplete_reason.includes(reason)}
+                          onCheckedChange={(checked) => handleIncompleteReasonChange(reason, checked as boolean)}
+                        />
+                        <Label htmlFor={reason} className="text-sm">{reason}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label>Reasons / Remarks for the Discharge if other than Complete Discharge (by NLMRC Staff)</Label>
+              <Textarea
+                value={exitFormData.discharge_remarks}
+                onChange={(e) => handleExitInputChange("discharge_remarks", e.target.value)}
+                rows={3}
+                placeholder="Enter remarks..."
+              />
+            </div>
+
+            <Separator />
+
+            <div>
+              <Label>Reasons for entering treatment</Label>
+              <Textarea
+                value={exitFormData.reasons_for_treatment}
+                onChange={(e) => handleExitInputChange("reasons_for_treatment", e.target.value)}
+                rows={3}
+                placeholder="Enter reasons..."
+              />
+            </div>
+
+            <div>
+              <Label>Problems as identified on the treatment plan problem list</Label>
+              <Textarea
+                value={exitFormData.treatment_plan_problems}
+                onChange={(e) => handleExitInputChange("treatment_plan_problems", e.target.value)}
+                rows={3}
+                placeholder="Enter problems..."
+              />
+            </div>
+
+            <div>
+              <Label>Family's involvement in the treatment process</Label>
+              <Textarea
+                value={exitFormData.family_involvement}
+                onChange={(e) => handleExitInputChange("family_involvement", e.target.value)}
+                rows={3}
+                placeholder="Enter details..."
+              />
+            </div>
+
+            <div>
+              <Label>Client aftercare plan & expected date/year of completion from Aftercare program</Label>
+              <Textarea
+                value={exitFormData.aftercare_plan}
+                onChange={(e) => handleExitInputChange("aftercare_plan", e.target.value)}
+                rows={3}
+                placeholder="Enter aftercare plan..."
+              />
+            </div>
+
+            <Separator />
+
+            {/* Receiving Adult Information */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Receiving Adult Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Name of Adult receiving the Client</Label>
+                  <Input
+                    value={exitFormData.receiving_adult_name}
+                    onChange={(e) => handleExitInputChange("receiving_adult_name", e.target.value)}
+                    placeholder="Enter name..."
+                  />
+                </div>
+                <div>
+                  <Label>ID Number of Adult receiving the Client</Label>
+                  <Input
+                    value={exitFormData.receiving_adult_id_number}
+                    onChange={(e) => handleExitInputChange("receiving_adult_id_number", e.target.value)}
+                    placeholder="Enter ID number..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">Relationship of the receiving adult with the client</Label>
+                <RadioGroup
+                  value={exitFormData.receiving_adult_relationship}
+                  onValueChange={(value) => handleExitInputChange("receiving_adult_relationship", value)}
+                  className="flex flex-wrap gap-4 mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Parent" id="parent" />
+                    <Label htmlFor="parent">Parent</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Guardian" id="guardian" />
+                    <Label htmlFor="guardian">Guardian</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Other" id="other" />
+                    <Label htmlFor="other">Other</Label>
+                  </div>
+                </RadioGroup>
+                {exitFormData.receiving_adult_relationship === "Other" && (
+                  <Input
+                    className="mt-2"
+                    value={exitFormData.receiving_adult_relationship_other}
+                    onChange={(e) => handleExitInputChange("receiving_adult_relationship_other", e.target.value)}
+                    placeholder="Specify relationship..."
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Name of Agency / Organization represented by the receiving Adult</Label>
+                  <Input
+                    value={exitFormData.receiving_agency_name}
+                    onChange={(e) => handleExitInputChange("receiving_agency_name", e.target.value)}
+                    placeholder="Enter agency name..."
+                  />
+                </div>
+                <div>
+                  <Label>Agency Contacts</Label>
+                  <Input
+                    value={exitFormData.receiving_agency_contacts}
+                    onChange={(e) => handleExitInputChange("receiving_agency_contacts", e.target.value)}
+                    placeholder="Enter contacts..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Position of the Receiving Adult</Label>
+                <Input
+                  value={exitFormData.receiving_adult_position}
+                  onChange={(e) => handleExitInputChange("receiving_adult_position", e.target.value)}
+                  placeholder="Enter position..."
+                />
+              </div>
+
+              <div>
+                <Label>Physical address of the Receiving adult / Agency</Label>
+                <Textarea
+                  value={exitFormData.receiving_adult_address}
+                  onChange={(e) => handleExitInputChange("receiving_adult_address", e.target.value)}
+                  rows={2}
+                  placeholder="Enter address..."
+                />
+              </div>
+
+              <div>
+                <Label>Brief remarks by the receiving Adult (Where applicable)</Label>
+                <Textarea
+                  value={exitFormData.receiving_adult_remarks}
+                  onChange={(e) => handleExitInputChange("receiving_adult_remarks", e.target.value)}
+                  rows={3}
+                  placeholder="Enter remarks..."
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Signatures */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Signatures</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+                <div>
+                  <Label>Client Name</Label>
+                  <Input
+                    value={exitFormData.client_signature_name}
+                    onChange={(e) => handleExitInputChange("client_signature_name", e.target.value)}
+                    placeholder="Enter client name..."
+                  />
+                </div>
+                <div>
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={exitFormData.client_signature_date}
+                    onChange={(e) => handleExitInputChange("client_signature_date", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+                <div>
+                  <Label>Receiving Adult Name</Label>
+                  <Input
+                    value={exitFormData.receiving_adult_signature_name}
+                    onChange={(e) => handleExitInputChange("receiving_adult_signature_name", e.target.value)}
+                    placeholder="Enter name..."
+                  />
+                </div>
+                <div>
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={exitFormData.receiving_adult_signature_date}
+                    onChange={(e) => handleExitInputChange("receiving_adult_signature_date", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+                <div>
+                  <Label>NLMRC Counsellor Name</Label>
+                  <Input
+                    value={exitFormData.counsellor_signature_name}
+                    onChange={(e) => handleExitInputChange("counsellor_signature_name", e.target.value)}
+                    placeholder="Enter counsellor name..."
+                  />
+                </div>
+                <div>
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={exitFormData.counsellor_signature_date}
+                    onChange={(e) => handleExitInputChange("counsellor_signature_date", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+                <div>
+                  <Label>HORS Name</Label>
+                  <Input
+                    value={exitFormData.hors_signature_name}
+                    onChange={(e) => handleExitInputChange("hors_signature_name", e.target.value)}
+                    placeholder="Enter HORS name..."
+                  />
+                </div>
+                <div>
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={exitFormData.hors_signature_date}
+                    onChange={(e) => handleExitInputChange("hors_signature_date", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4">
+              <Button variant="outline" onClick={() => setExitDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleExitSubmit}
+                disabled={submittingExit}
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                {submittingExit ? "Submitting..." : "Submit Exit Form"}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -513,609 +1112,6 @@ export default function Counselling() {
         </Card>
       </div>
 
-      {/* SOAP Notes Dialog */}
-      <Dialog open={soapDialogOpen} onOpenChange={setSoapDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-center border-b pb-4">
-              SOAP NOTES
-            </DialogTitle>
-            <DialogDescription className="text-center">
-              Session documentation for {soapNoteClient?.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ScrollArea className="h-[70vh] pr-4">
-            <div className="space-y-6 p-2">
-              {/* Client and Counsellor Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>CLIENT'S NAME</Label>
-                  <Input value={soapNoteClient?.name || ""} disabled className="bg-muted font-medium" />
-                </div>
-                <div>
-                  <Label>NAME OF COUNSELLOR <span className="text-red-500">*</span></Label>
-                  <Input 
-                    value={soapFormData.counsellor_name}
-                    onChange={(e) => handleSoapInputChange("counsellor_name", e.target.value)}
-                    placeholder="Enter counsellor name..."
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>DATE</Label>
-                  <Input 
-                    type="date" 
-                    value={soapFormData.session_date}
-                    onChange={(e) => handleSoapInputChange("session_date", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>TIME</Label>
-                  <Input 
-                    type="time" 
-                    value={soapFormData.session_time}
-                    onChange={(e) => handleSoapInputChange("session_time", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* SUBJECTIVE */}
-              <div>
-                <Label className="text-base font-semibold text-orange-600">SUBJECTIVE</Label>
-                <p className="text-xs text-muted-foreground mb-2">What the client reports - their feelings, concerns, symptoms, and perspective</p>
-                <Textarea 
-                  value={soapFormData.subjective}
-                  onChange={(e) => handleSoapInputChange("subjective", e.target.value)}
-                  rows={6}
-                  placeholder="Document the client's subjective experience, statements, and reported symptoms..."
-                  className="resize-none"
-                />
-              </div>
-
-              {/* OBJECTIVE */}
-              <div>
-                <Label className="text-base font-semibold text-orange-600">OBJECTIVE</Label>
-                <p className="text-xs text-muted-foreground mb-2">Observable and measurable findings - behavior, appearance, test results</p>
-                <Textarea 
-                  value={soapFormData.objective}
-                  onChange={(e) => handleSoapInputChange("objective", e.target.value)}
-                  rows={6}
-                  placeholder="Document observable behaviors, appearance, affect, and any measurable data..."
-                  className="resize-none"
-                />
-              </div>
-
-              {/* ASSESSMENT */}
-              <div>
-                <Label className="text-base font-semibold text-orange-600">ASSESSMENT</Label>
-                <p className="text-xs text-muted-foreground mb-2">Clinical conclusions, diagnosis, and interpretation of findings</p>
-                <Textarea 
-                  value={soapFormData.assessment}
-                  onChange={(e) => handleSoapInputChange("assessment", e.target.value)}
-                  rows={5}
-                  placeholder="Document your clinical assessment, diagnosis, and interpretation..."
-                  className="resize-none"
-                />
-              </div>
-
-              {/* PLAN */}
-              <div>
-                <Label className="text-base font-semibold text-orange-600">PLAN</Label>
-                <p className="text-xs text-muted-foreground mb-2">Treatment plan, interventions, and next steps</p>
-                <Textarea 
-                  value={soapFormData.plan}
-                  onChange={(e) => handleSoapInputChange("plan", e.target.value)}
-                  rows={4}
-                  placeholder="Document the treatment plan and interventions..."
-                  className="resize-none"
-                />
-              </div>
-
-              <Separator />
-
-              {/* Next Session Date */}
-              <div>
-                <Label className="text-base font-semibold">DATE OF NEXT SESSION</Label>
-                <Input 
-                  type="date" 
-                  value={soapFormData.next_session_date}
-                  onChange={(e) => handleSoapInputChange("next_session_date", e.target.value)}
-                  className="max-w-xs"
-                />
-              </div>
-
-              {/* Areas to Focus */}
-              <div>
-                <Label className="text-base font-semibold">AREAS TO FOCUS ATTENTION ON</Label>
-                <Textarea 
-                  value={soapFormData.areas_to_focus}
-                  onChange={(e) => handleSoapInputChange("areas_to_focus", e.target.value)}
-                  rows={4}
-                  placeholder="Document areas that need special attention in future sessions..."
-                  className="resize-none"
-                />
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex justify-end gap-4 pt-4">
-                <Button variant="outline" onClick={() => setSoapDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSoapSubmit} 
-                  disabled={submittingSoap}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  {submittingSoap ? "Saving..." : "Save SOAP Note"}
-                </Button>
-              </div>
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      {/* View SOAP Notes Dialog */}
-      <Dialog open={viewSoapDialogOpen} onOpenChange={setViewSoapDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh]">
-          <DialogHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 text-left">
-              <div>
-                <DialogTitle className="text-xl font-bold">
-                  SOAP NOTES — {viewSoapClient?.name}
-                </DialogTitle>
-                <DialogDescription className="mt-1">
-                  {viewSoapNotes.length} recorded session{viewSoapNotes.length !== 1 ? 's' : ''} for this client
-                </DialogDescription>
-              </div>
-              {viewSoapNotes.length > 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => handleExportAllSoapNotesPDF(viewSoapNotes, viewSoapClient)}
-                  className="bg-orange-600 hover:bg-orange-700 text-white shrink-0 self-start sm:self-auto"
-                >
-                  <Download className="h-4 w-4 mr-1.5" />
-                  Export All Notes (PDF)
-                </Button>
-              )}
-            </div>
-          </DialogHeader>
-
-          <ScrollArea className="h-[70vh] pr-4">
-            {loadingSoapNotes ? (
-              <p className="text-center text-muted-foreground py-8">Loading notes...</p>
-            ) : viewSoapNotes.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No SOAP notes recorded yet</p>
-            ) : (
-              <div className="space-y-4 p-2">
-                {viewSoapNotes.map((note) => (
-                  <Card key={note.id} className="border-l-4 border-l-orange-500">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-orange-500" />
-                          <span className="font-semibold">{note.session_date}</span>
-                          {note.session_time && (
-                            <>
-                              <Clock className="h-4 w-4 ml-2" />
-                              <span>{note.session_time}</span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{note.counsellor_name}</Badge>
-                          <Button size="sm" variant="outline" onClick={() => handleExportSoapNotePDF(note, viewSoapClient)}>
-                            <Download className="h-4 w-4 mr-1" />
-                            Export PDF
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {note.subjective && (
-                        <div>
-                          <h4 className="font-semibold text-orange-600 text-sm">SUBJECTIVE</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.subjective}</p>
-                        </div>
-                      )}
-                      {note.objective && (
-                        <div>
-                          <h4 className="font-semibold text-orange-600 text-sm">OBJECTIVE</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.objective}</p>
-                        </div>
-                      )}
-                      {note.assessment && (
-                        <div>
-                          <h4 className="font-semibold text-orange-600 text-sm">ASSESSMENT</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.assessment}</p>
-                        </div>
-                      )}
-                      {note.plan && (
-                        <div>
-                          <h4 className="font-semibold text-orange-600 text-sm">PLAN</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.plan}</p>
-                        </div>
-                      )}
-                      {note.next_session_date && (
-                        <div>
-                          <h4 className="font-semibold text-sm">Next Session</h4>
-                          <p className="text-sm mt-1">{note.next_session_date}</p>
-                        </div>
-                      )}
-                      {note.areas_to_focus && (
-                        <div>
-                          <h4 className="font-semibold text-sm">Areas to Focus</h4>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">{note.areas_to_focus}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      {/* Exit Form Dialog */}
-      <Dialog open={exitDialogOpen} onOpenChange={setExitDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-center border-b pb-4">
-              CLIENT DISCHARGE / EXIT FORM
-            </DialogTitle>
-            <DialogDescription className="text-center">
-              Complete this form to process client discharge
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ScrollArea className="h-[70vh] pr-4">
-            <div className="space-y-6 p-2">
-              {/* Date */}
-              <div className="flex justify-end">
-                <div className="w-48">
-                  <Label>Date</Label>
-                  <Input 
-                    type="date" 
-                    value={exitFormData.exit_date}
-                    onChange={(e) => handleExitInputChange("exit_date", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Client Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Name of Child / Young Person</Label>
-                  <Input value={selectedClient?.name || ""} disabled className="bg-muted" />
-                </div>
-                <div>
-                  <Label>Also Known As (AKA)</Label>
-                  <Input value={selectedClient?.nickname || ""} disabled className="bg-muted" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>Date of Birth</Label>
-                  <Input value={selectedClient?.date_of_birth || ""} disabled className="bg-muted" />
-                </div>
-                <div>
-                  <Label>Client's NLMRC Admission Number</Label>
-                  <Input value={selectedClient?.intake_number || ""} disabled className="bg-muted" />
-                </div>
-                <div>
-                  <Label>Date of Admission</Label>
-                  <Input value={selectedClient?.admission_date || ""} disabled className="bg-muted" />
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Nature of Discharge */}
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-base font-semibold">Nature of Discharge</Label>
-                  <RadioGroup 
-                    value={exitFormData.nature_of_discharge}
-                    onValueChange={(value) => handleExitInputChange("nature_of_discharge", value)}
-                    className="flex gap-6 mt-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Complete" id="complete" />
-                      <Label htmlFor="complete">Complete</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Incomplete" id="incomplete" />
-                      <Label htmlFor="incomplete">Incomplete</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {exitFormData.nature_of_discharge === "Incomplete" && (
-                  <div className="pl-4 border-l-2 border-orange-500">
-                    <Label className="text-sm font-medium">If Incomplete, specify (Tick all that apply)</Label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                      {["Escapee", "Voluntary discharge", "Early Reintegration", "Involuntary discharge"].map((reason) => (
-                        <div key={reason} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={reason}
-                            checked={exitFormData.incomplete_reason.includes(reason)}
-                            onCheckedChange={(checked) => handleIncompleteReasonChange(reason, checked as boolean)}
-                          />
-                          <Label htmlFor={reason} className="text-sm">{reason}</Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label>Reasons / Remarks for the Discharge if other than Complete Discharge (by NLMRC Staff)</Label>
-                <Textarea 
-                  value={exitFormData.discharge_remarks}
-                  onChange={(e) => handleExitInputChange("discharge_remarks", e.target.value)}
-                  rows={3}
-                  placeholder="Enter remarks..."
-                />
-              </div>
-
-              <Separator />
-
-              {/* Treatment Information */}
-              <div>
-                <Label>Reasons for entering treatment</Label>
-                <Textarea 
-                  value={exitFormData.reasons_for_treatment}
-                  onChange={(e) => handleExitInputChange("reasons_for_treatment", e.target.value)}
-                  rows={3}
-                  placeholder="Enter reasons..."
-                />
-              </div>
-
-              <div>
-                <Label>Problems as identified on the treatment plan problem list</Label>
-                <Textarea 
-                  value={exitFormData.treatment_plan_problems}
-                  onChange={(e) => handleExitInputChange("treatment_plan_problems", e.target.value)}
-                  rows={3}
-                  placeholder="Enter problems..."
-                />
-              </div>
-
-              <div>
-                <Label>Family's involvement in the treatment process</Label>
-                <Textarea 
-                  value={exitFormData.family_involvement}
-                  onChange={(e) => handleExitInputChange("family_involvement", e.target.value)}
-                  rows={3}
-                  placeholder="Enter details..."
-                />
-              </div>
-
-              <div>
-                <Label>Client aftercare plan & expected date/year of completion from Aftercare program</Label>
-                <Textarea 
-                  value={exitFormData.aftercare_plan}
-                  onChange={(e) => handleExitInputChange("aftercare_plan", e.target.value)}
-                  rows={3}
-                  placeholder="Enter aftercare plan..."
-                />
-              </div>
-
-              <Separator />
-
-              {/* Receiving Adult Information */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Receiving Adult Information</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Name of Adult receiving the Client</Label>
-                    <Input 
-                      value={exitFormData.receiving_adult_name}
-                      onChange={(e) => handleExitInputChange("receiving_adult_name", e.target.value)}
-                      placeholder="Enter name..."
-                    />
-                  </div>
-                  <div>
-                    <Label>ID Number of Adult receiving the Client</Label>
-                    <Input 
-                      value={exitFormData.receiving_adult_id_number}
-                      onChange={(e) => handleExitInputChange("receiving_adult_id_number", e.target.value)}
-                      placeholder="Enter ID number..."
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium">Relationship of the receiving adult with the client</Label>
-                  <RadioGroup 
-                    value={exitFormData.receiving_adult_relationship}
-                    onValueChange={(value) => handleExitInputChange("receiving_adult_relationship", value)}
-                    className="flex flex-wrap gap-4 mt-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Parent" id="parent" />
-                      <Label htmlFor="parent">Parent</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Guardian" id="guardian" />
-                      <Label htmlFor="guardian">Guardian</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Other" id="other" />
-                      <Label htmlFor="other">Other</Label>
-                    </div>
-                  </RadioGroup>
-                  {exitFormData.receiving_adult_relationship === "Other" && (
-                    <Input 
-                      className="mt-2"
-                      value={exitFormData.receiving_adult_relationship_other}
-                      onChange={(e) => handleExitInputChange("receiving_adult_relationship_other", e.target.value)}
-                      placeholder="Specify relationship..."
-                    />
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Name of Agency / Organization represented by the receiving Adult</Label>
-                    <Input 
-                      value={exitFormData.receiving_agency_name}
-                      onChange={(e) => handleExitInputChange("receiving_agency_name", e.target.value)}
-                      placeholder="Enter agency name..."
-                    />
-                  </div>
-                  <div>
-                    <Label>Agency Contacts</Label>
-                    <Input 
-                      value={exitFormData.receiving_agency_contacts}
-                      onChange={(e) => handleExitInputChange("receiving_agency_contacts", e.target.value)}
-                      placeholder="Enter contacts..."
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Position of the Receiving Adult</Label>
-                  <Input 
-                    value={exitFormData.receiving_adult_position}
-                    onChange={(e) => handleExitInputChange("receiving_adult_position", e.target.value)}
-                    placeholder="Enter position..."
-                  />
-                </div>
-
-                <div>
-                  <Label>Physical address of the Receiving adult / Agency</Label>
-                  <Textarea 
-                    value={exitFormData.receiving_adult_address}
-                    onChange={(e) => handleExitInputChange("receiving_adult_address", e.target.value)}
-                    rows={2}
-                    placeholder="Enter address..."
-                  />
-                </div>
-
-                <div>
-                  <Label>Brief remarks by the receiving Adult (Where applicable)</Label>
-                  <Textarea 
-                    value={exitFormData.receiving_adult_remarks}
-                    onChange={(e) => handleExitInputChange("receiving_adult_remarks", e.target.value)}
-                    rows={3}
-                    placeholder="Enter remarks..."
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Signatures */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Signatures</h3>
-                
-                {/* Client Signature */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
-                  <div>
-                    <Label>Client Name</Label>
-                    <Input 
-                      value={exitFormData.client_signature_name}
-                      onChange={(e) => handleExitInputChange("client_signature_name", e.target.value)}
-                      placeholder="Enter client name..."
-                    />
-                  </div>
-                  <div>
-                    <Label>Date</Label>
-                    <Input 
-                      type="date" 
-                      value={exitFormData.client_signature_date}
-                      onChange={(e) => handleExitInputChange("client_signature_date", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* Receiving Adult Signature */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
-                  <div>
-                    <Label>Receiving Adult Name</Label>
-                    <Input 
-                      value={exitFormData.receiving_adult_signature_name}
-                      onChange={(e) => handleExitInputChange("receiving_adult_signature_name", e.target.value)}
-                      placeholder="Enter name..."
-                    />
-                  </div>
-                  <div>
-                    <Label>Date</Label>
-                    <Input 
-                      type="date" 
-                      value={exitFormData.receiving_adult_signature_date}
-                      onChange={(e) => handleExitInputChange("receiving_adult_signature_date", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* NLMRC Counsellor Signature */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
-                  <div>
-                    <Label>NLMRC Counsellor Name</Label>
-                    <Input 
-                      value={exitFormData.counsellor_signature_name}
-                      onChange={(e) => handleExitInputChange("counsellor_signature_name", e.target.value)}
-                      placeholder="Enter counsellor name..."
-                    />
-                  </div>
-                  <div>
-                    <Label>Date</Label>
-                    <Input 
-                      type="date" 
-                      value={exitFormData.counsellor_signature_date}
-                      onChange={(e) => handleExitInputChange("counsellor_signature_date", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* HORS Signature */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
-                  <div>
-                    <Label>HORS Name</Label>
-                    <Input 
-                      value={exitFormData.hors_signature_name}
-                      onChange={(e) => handleExitInputChange("hors_signature_name", e.target.value)}
-                      placeholder="Enter HORS name..."
-                    />
-                  </div>
-                  <div>
-                    <Label>Date</Label>
-                    <Input 
-                      type="date" 
-                      value={exitFormData.hors_signature_date}
-                      onChange={(e) => handleExitInputChange("hors_signature_date", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex justify-end gap-4 pt-4">
-                <Button variant="outline" onClick={() => setExitDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleExitSubmit} 
-                  disabled={submittingExit}
-                  className="bg-red-500 hover:bg-red-600 text-white"
-                >
-                  {submittingExit ? "Submitting..." : "Submit Exit Form"}
-                </Button>
-              </div>
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

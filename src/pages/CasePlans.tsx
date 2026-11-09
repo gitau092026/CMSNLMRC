@@ -39,7 +39,7 @@ const CasePlans = () => {
  try {
  const { data, error } = await supabase
  .from('clients')
- .select('*')
+ .select('id, name, client_id, status, profile_picture')
  .ilike('status', 'active')
  .order('name');
 

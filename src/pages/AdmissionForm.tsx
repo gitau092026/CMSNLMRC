@@ -8,7 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { compressImage } from "@/utils/imageCompression";
-import { setCachedClient } from "@/lib/clientCache";
+import { setCachedClient, invalidateClientsCache } from "@/lib/clientCache";
+import { invalidateDashboardCache } from "@/hooks/useDashboardStats";
+import { getClientIntake, getUniqueIntakes } from "@/utils/intakeUtils";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage
 } from "@/components/ui/form";
@@ -31,6 +33,7 @@ const admissionSchema = z.object({
   gender: z.string().min(1, "Gender is required"),
 
   // Entry Information
+  intake: z.string().optional(),
   intakeNumber: z.string().min(1, "Intake/OB Number (Client ID) is required"),
   admissionDate: z.string().optional(),
   typeOfEntry: z.string().optional(),
@@ -54,6 +57,7 @@ const AdmissionForm = () => {
   const [existingClient, setExistingClient] = useState<any>(null);
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [knownIntakes, setKnownIntakes] = useState<string[]>([]);
 
   const isAllowed = [
     "admin",
@@ -111,6 +115,7 @@ const AdmissionForm = () => {
       ethnicCommunity: "",
       hobbies: "",
       gender: "",
+      intake: "",
       intakeNumber: "",
       admissionDate: new Date().toISOString().split("T")[0],
       typeOfEntry: "",
@@ -119,6 +124,21 @@ const AdmissionForm = () => {
       clientStatus: "Active",
     },
   });
+
+  useEffect(() => {
+    const fetchExistingIntakes = async () => {
+      try {
+        const { data } = await supabase.from("clients").select("notes, intake_number, client_id, admission_date, created_at");
+        if (data) {
+          const list = getUniqueIntakes(data).filter(i => i !== "Unassigned");
+          setKnownIntakes(list);
+        }
+      } catch {
+        // ignore error
+      }
+    };
+    fetchExistingIntakes();
+  }, []);
 
   useEffect(() => {
     if (clientId) {
@@ -157,6 +177,7 @@ const AdmissionForm = () => {
               ethnicCommunity: notesObj.ethnicCommunity || assessmentFields.ethnicCommunity || assessmentFields.ethnicity || "",
               hobbies: notesObj.hobbies || assessmentFields.hobbies || "",
               gender: data.gender || "",
+              intake: notesObj.intake || assessmentFields.intake || getClientIntake(data) || "",
               intakeNumber: data.intake_number || data.client_id || "",
               admissionDate: data.admission_date || "",
               typeOfEntry: data.admission_type || "",
@@ -243,6 +264,7 @@ const AdmissionForm = () => {
         ethnicCommunity: values.ethnicCommunity || null,
         hobbies: values.hobbies || null,
         drugsAbused: values.drugsAbused || null,
+        intake: values.intake?.trim() || null,
         ...(existingNotes.assessmentData ? {
           assessmentData: {
             ...existingNotes.assessmentData,
@@ -252,8 +274,13 @@ const AdmissionForm = () => {
             ethnicCommunity: values.ethnicCommunity || null,
             hobbies: values.hobbies || null,
             drugsAbused: values.drugsAbused || null,
+            intake: values.intake?.trim() || null,
           }
-        } : {})
+        } : {
+          assessmentData: {
+            intake: values.intake?.trim() || null,
+          }
+        })
       };
 
       const clientData = {
@@ -281,6 +308,8 @@ const AdmissionForm = () => {
 
         const fullClient = { ...(existingClient || {}), ...clientData, id: clientId };
         setCachedClient(fullClient);
+        invalidateClientsCache();
+        invalidateDashboardCache();
 
         toast({
           title: "Admission Details Updated",
@@ -300,8 +329,12 @@ const AdmissionForm = () => {
         if (data?.id) {
           const fullClient = { ...clientData, id: data.id };
           setCachedClient(fullClient);
+          invalidateClientsCache();
+          invalidateDashboardCache();
           navigate(`/clients/${data.id}`, { state: { client: fullClient } });
         } else {
+          invalidateClientsCache();
+          invalidateDashboardCache();
           navigate("/clients");
         }
       }
@@ -576,8 +609,33 @@ const AdmissionForm = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-6 pb-6 pt-0 space-y-4">
-                {/* Row 1: Intake/OB Number (Client ID) *, Date of entry */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Row 1: Intake / Cohort, Intake/OB Number (Client ID) *, Date of entry */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="intake"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Intake / Cohort</FormLabel>
+                        <FormControl>
+                          <div>
+                            <Input
+                              {...field}
+                              list="intake-suggestions"
+                              placeholder="e.g. Intake 1, Intake 2024"
+                              className="rounded-lg h-10"
+                            />
+                            <datalist id="intake-suggestions">
+                              {knownIntakes.map((item) => (
+                                <option key={item} value={item} />
+                              ))}
+                            </datalist>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="intakeNumber"

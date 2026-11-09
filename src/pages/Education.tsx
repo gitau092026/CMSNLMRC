@@ -138,7 +138,7 @@ const Education = () => {
  setLoading(true);
  const { data, error } = await supabase
  .from('clients')
- .select('*')
+ .select('id, name, age, status, education_level, education_status, level_reached, school_name, profile_picture, client_id')
  .or('status.eq.Active,status.eq.Complete')
  .order('name', { ascending: true });
 

@@ -1,7 +1,5 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Target } from "lucide-react";
 
 interface ChartData {
   name: string;
@@ -48,13 +46,13 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
   if (percent < 0.07) return null;
   if (isActive(name)) {
     return (
-      <text x={cx} y={cy - 8} fill="#16a34a" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={800}>
+      <text x={cx} y={cy - 8} fill="#16a34a" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800}>
         ACTIVE
       </text>
     );
   }
   return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700}>
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
@@ -65,93 +63,83 @@ export function ClientStatusChart({ data, loading }: ClientStatusChartProps) {
   const total = enriched.reduce((sum, d) => sum + d.value, 0);
   const hasData = enriched.length > 0 && total > 0;
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[200px]">
+        <Skeleton className="h-[140px] w-[140px] rounded-full" />
+      </div>
+    );
+  }
+
+  if (!hasData) {
+    return (
+      <div className="h-[200px] flex flex-col items-center justify-center text-slate-300 border-2 border-dashed rounded-xl border-slate-100">
+        <p className="text-sm font-medium text-slate-400">No status data</p>
+      </div>
+    );
+  }
+
   return (
-    <Card className="border border-slate-100 shadow-sm rounded-2xl overflow-hidden bg-white h-full">
-      <CardHeader className="pb-2 px-5 pt-5 border-b border-slate-50">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 bg-violet-50 rounded-lg">
-            <Target className="h-4 w-4 text-violet-600" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">Client Status</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Distribution of all client statuses</p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="px-5 pb-5 pt-3">
-        {loading ? (
-          <div className="flex items-center justify-center h-[260px]">
-            <Skeleton className="h-[150px] w-[150px] rounded-full" />
-          </div>
-        ) : hasData ? (
-          <>
-            <div className="h-[180px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={enriched}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={82}
-                    paddingAngle={3}
-                    dataKey="value"
-                    labelLine={false}
-                    label={renderCustomLabel}
-                    animationDuration={700}
-                  >
-                    {enriched.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                        stroke={isActive(entry.name) ? entry.color : "white"}
-                        strokeWidth={isActive(entry.name) ? 5 : 2}
-                        style={isActive(entry.name) ? { filter: "drop-shadow(0 0 8px #16a34a)" } : {}}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-3 space-y-1.5 border-t border-slate-50 pt-3 max-h-[140px] overflow-y-auto pr-1">
-              {enriched.map((entry) => (
-                <div
-                  key={entry.name}
-                  className={`flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors ${
-                    isActive(entry.name) ? "bg-emerald-50 border border-emerald-200" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entry.color }} />
-                    <span className={`text-xs font-medium truncate max-w-[110px] ${isActive(entry.name) ? "text-emerald-700 font-bold" : "text-slate-500"}`} title={entry.name}>
-                      {entry.name}
-                      {isActive(entry.name) && (
-                        <span className="ml-1.5 text-[9px] bg-emerald-500 text-white rounded-full px-1.5 py-0.5 font-bold uppercase">Active</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold ${isActive(entry.name) ? "text-emerald-700" : "text-slate-800"}`}>{entry.value}</span>
-                    <span className={`text-[10px] w-8 text-right ${isActive(entry.name) ? "text-emerald-500" : "text-slate-300"}`}>
-                      {total > 0 ? `${Math.round((entry.value / total) * 100)}%` : "0%"}
-                    </span>
-                  </div>
-                </div>
+    <div>
+      <div className="h-[180px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={enriched}
+              cx="50%"
+              cy="50%"
+              innerRadius={46}
+              outerRadius={80}
+              paddingAngle={3}
+              dataKey="value"
+              labelLine={false}
+              label={renderCustomLabel}
+              animationDuration={700}
+            >
+              {enriched.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.color}
+                  stroke={isActive(entry.name) ? entry.color : "white"}
+                  strokeWidth={isActive(entry.name) ? 4 : 2}
+                  style={isActive(entry.name) ? { filter: "drop-shadow(0 0 6px #16a34a)" } : {}}
+                />
               ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-2 space-y-1 border-t border-slate-100 pt-2">
+        {enriched.map((entry) => (
+          <div
+            key={entry.name}
+            className={`flex items-center justify-between rounded px-1.5 py-1 ${
+              isActive(entry.name) ? "bg-emerald-50 border border-emerald-100" : ""
+            }`}
+          >
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: entry.color }} />
+              <span className={`text-[11px] font-medium truncate ${isActive(entry.name) ? "text-emerald-700 font-bold" : "text-slate-500"}`} title={entry.name}>
+                {entry.name}
+                {isActive(entry.name) && (
+                  <span className="ml-1 text-[9px] bg-emerald-500 text-white rounded-full px-1 py-0.5 font-bold uppercase">Active</span>
+                )}
+              </span>
             </div>
-            <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-2">
-              <span className="text-xs font-semibold text-slate-400">Total Clients</span>
-              <span className="text-xs font-extrabold text-slate-800">{total}</span>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className={`text-[11px] font-bold ${isActive(entry.name) ? "text-emerald-700" : "text-slate-800"}`}>{entry.value}</span>
+              <span className={`text-[10px] w-7 text-right ${isActive(entry.name) ? "text-emerald-500" : "text-slate-300"}`}>
+                {total > 0 ? `${Math.round((entry.value / total) * 100)}%` : "0%"}
+              </span>
             </div>
-          </>
-        ) : (
-          <div className="h-[260px] flex flex-col items-center justify-center text-slate-300 border-2 border-dashed rounded-xl border-slate-100">
-            <Target className="h-8 w-8 mb-2 opacity-40" />
-            <p className="text-sm font-medium text-slate-400">No status data</p>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        ))}
+        <div className="flex items-center justify-between border-t border-slate-100 pt-1.5 mt-1">
+          <span className="text-[11px] font-semibold text-slate-400">Total Clients</span>
+          <span className="text-[11px] font-extrabold text-slate-800">{total}</span>
+        </div>
+      </div>
+    </div>
   );
 }

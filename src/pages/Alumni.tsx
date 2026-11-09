@@ -98,39 +98,36 @@ export default function Alumni() {
  const fetchAlumni = async () => {
  try {
  setLoading(true);
- // Fetch clients with Alumni or Complete status along with their aftercare records
- const { data: clientsData, error: clientsError } = await supabase
- .from('clients')
- .select(`
- id, name, client_id, profile_picture, status, contact, address,
- date_of_birth, age, gender, notes, created_at,
- aftercare_records (*)
- `)
- .in('status', ['Alumni - Awaiting Placement', 'Alumni - Placed', 'Complete', 'Alumni', 'Graduated'])
- .order('name', { ascending: true });
+ // Fetch clients with Alumni or Complete status along with their aftercare records and exit records in parallel
+ const [clientsRes, exitRes] = await Promise.all([
+   supabase
+     .from('clients')
+     .select(`
+       id, name, client_id, profile_picture, status, contact, address,
+       date_of_birth, age, gender, notes, created_at,
+       aftercare_records (id, institution_workshop, completion_status, placement_type, placement_date, placement_course)
+     `)
+     .in('status', ['Alumni - Awaiting Placement', 'Alumni - Placed', 'Complete', 'Alumni', 'Graduated'])
+     .order('name', { ascending: true }),
+   supabase
+     .from('exit_records')
+     .select('client_id, exit_date')
+ ]);
 
- if (clientsError) throw clientsError;
+ if (clientsRes.error) throw clientsRes.error;
+ const clientsData = clientsRes.data;
 
  if (clientsData && clientsData.length > 0) {
- clientsData.forEach((c: any) => setCachedClient(c));
- prefetchAvatars(clientsData.map((c: any) => c.profile_picture));
+   clientsData.forEach((c: any) => setCachedClient(c));
+   prefetchAvatars(clientsData.map((c: any) => c.profile_picture));
  }
 
- // Fetch exit records for alumni to get exit dates
- if (clientsData && clientsData.length > 0) {
- const clientIds = clientsData.map(c => c.id);
- const { data: exitData, error: exitError } = await supabase
- .from('exit_records')
- .select('client_id, exit_date')
- .in('client_id', clientIds);
-
- if (!exitError && exitData) {
- const exitMap: Record<string, string> = {};
- exitData.forEach(record => {
- exitMap[record.client_id] = record.exit_date;
- });
- setExitRecords(exitMap);
- }
+ if (!exitRes.error && exitRes.data) {
+   const exitMap: Record<string, string> = {};
+   exitRes.data.forEach(record => {
+     exitMap[record.client_id] = record.exit_date;
+   });
+   setExitRecords(exitMap);
  }
 
       // Auto-fix: Update statuses based on placements and graduation
