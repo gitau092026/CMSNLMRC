@@ -23,6 +23,7 @@ import {
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogFooter,
@@ -676,6 +677,9 @@ export default function ManageUsers() {
                             <UserPlus className="h-5 w-5 text-purple-600" />
                             Add New User
                         </DialogTitle>
+                        <DialogDescription>
+                            Create a new staff account with an email, username, and department role.
+                        </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4">
@@ -775,6 +779,9 @@ export default function ManageUsers() {
                             <Edit className="h-5 w-5 text-blue-600" />
                             Edit User Role
                         </DialogTitle>
+                        <DialogDescription>
+                            Change the department role assigned to this user account.
+                        </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4">
