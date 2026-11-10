@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { drawPDFHeader } from "@/utils/pdfHeader";
-import { getClientIntake } from "@/utils/intakeUtils";
+import { getClientIntake, formatDOB, formatSafeDate } from "@/utils/intakeUtils";
 
 import {
     User,
@@ -371,11 +371,11 @@ const ClientDetails = () => {
             ['Status', client.status],
             ['Age', `${client.age} years`],
             ['Gender', client.gender],
-            ['Date of Birth', client.date_of_birth ? new Date(client.date_of_birth).toLocaleDateString() : 'N/A'],
+            ['Date of Birth', formatDOB(client.date_of_birth)],
             ...(client.nickname ? [['Nickname', client.nickname]] : []),
             ...(client.intake_number ? [['Intake Number', client.intake_number]] : []),
             ...(client.police_ob_number ? [['Police OB Number', client.police_ob_number]] : []),
-            ['Admission Date', new Date(client.admission_date).toLocaleDateString()],
+            ['Admission Date', formatSafeDate(client.admission_date)],
             ...(assessmentData?.religion ? [['Religion', assessmentData.religion]] : []),
             ...(assessmentData?.ethnicity ? [['Ethnicity', assessmentData.ethnicity]] : []),
             ...(assessmentData?.ethnicCommunity ? [['Ethnic Community', assessmentData.ethnicCommunity]] : []),
@@ -914,7 +914,7 @@ const ClientDetails = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Age</span><p className="text-sm font-medium text-foreground">{client.age} years</p></div>
                             <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Gender</span><p className="text-sm font-medium text-foreground">{client.gender}</p></div>
-                            <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">DOB</span><p className="text-sm font-medium text-foreground">{new Date(client.date_of_birth).toLocaleDateString()}</p></div>
+                            <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">DOB</span><p className="text-sm font-medium text-foreground">{formatDOB(client.date_of_birth)}</p></div>
                             <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Intake / Cohort</span><p className="text-sm font-semibold text-primary">{getClientIntake(client)}</p></div>
                             {client.nickname && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nickname</span><p className="text-sm font-medium text-foreground">{client.nickname}</p></div>}
                             {client.intake_number && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Intake Number</span><p className="text-sm font-medium text-foreground">{client.intake_number}</p></div>}
@@ -925,7 +925,7 @@ const ClientDetails = () => {
                             {assessmentData?.healthCondition && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Health Condition</span><p className="text-sm font-medium text-foreground">{assessmentData.healthCondition}</p></div>}
                             {assessmentData?.hobbies && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hobbies</span><p className="text-sm font-medium text-foreground">{assessmentData.hobbies}</p></div>}
                             {assessmentData?.drugsAbused && <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Drugs Abused</span><p className="text-sm font-medium text-foreground">{assessmentData.drugsAbused}</p></div>}
-                            <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admission Date</span><p className="text-sm font-medium text-foreground">{new Date(client.admission_date).toLocaleDateString()}</p></div>
+                            <div className="space-y-1"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admission Date</span><p className="text-sm font-medium text-foreground">{formatSafeDate(client.admission_date)}</p></div>
                         </div>
                     </CardContent>
                 </Card>

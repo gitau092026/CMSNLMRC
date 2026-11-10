@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { compressImage } from "@/utils/imageCompression";
 import { setCachedClient, invalidateClientsCache } from "@/lib/clientCache";
 import { invalidateDashboardCache } from "@/hooks/useDashboardStats";
-import { getClientIntake } from "@/utils/intakeUtils";
+import { getClientIntake, formatDOB, formatSafeDate } from "@/utils/intakeUtils";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -464,7 +464,7 @@ const RegisterClient = () => {
         form.reset({
           firstName: data.name?.split(' ')[0] || "",
           secondName: data.name?.split(' ').slice(1).join(' ') || "",
-          dateOfBirth: data.date_of_birth || "",
+          dateOfBirth: (data.date_of_birth && !data.date_of_birth.startsWith("1970")) ? data.date_of_birth : "",
           calculatedAge: data.age?.toString() || "",
           gender: data.gender || "",
           nickname: data.nickname || "",
@@ -753,7 +753,7 @@ const RegisterClient = () => {
                                 onClick={() => handleSelectClient(client.id)}
                               >
                                 <span className="font-medium text-foreground">{client.name}</span>
-                                <span className="text-xs text-muted-foreground">ID: {client.intake_number || client.client_id} | Admitted: {client.admission_date ? new Date(client.admission_date).toLocaleDateString() : 'N/A'}</span>
+                                <span className="text-xs text-muted-foreground">ID: {client.intake_number || client.client_id} | Admitted: {formatSafeDate(client.admission_date)}</span>
                               </div>
                             ))}
                           {allClients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.intake_number || c.client_id || "").toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
@@ -789,13 +789,13 @@ const RegisterClient = () => {
                 </CardHeader>
                 <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Full Name</span><span className="font-medium">{selectedClientSummary.name}</span></div>
-                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Date of Birth / Age</span><span className="font-medium">{selectedClientSummary.date_of_birth ? new Date(selectedClientSummary.date_of_birth).toLocaleDateString() : 'N/A'} ({selectedClientSummary.age ? `${selectedClientSummary.age} yrs` : 'N/A'})</span></div>
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Date of Birth / Age</span><span className="font-medium">{formatDOB(selectedClientSummary.date_of_birth)} ({selectedClientSummary.age ? `${selectedClientSummary.age} yrs` : 'N/A'})</span></div>
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Gender</span><span className="font-medium">{selectedClientSummary.gender || 'N/A'}</span></div>
                   
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Intake / Cohort</span><span className="font-semibold text-primary">{getClientIntake(selectedClientSummary)}</span></div>
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Client/Intake ID</span><span className="font-medium">{selectedClientSummary.intake_number || selectedClientSummary.client_id || 'N/A'}</span></div>
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Police OB No.</span><span className="font-medium">{selectedClientSummary.police_ob_number || 'N/A'}</span></div>
-                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Admission Date</span><span className="font-medium">{selectedClientSummary.admission_date ? new Date(selectedClientSummary.admission_date).toLocaleDateString() : 'N/A'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs uppercase mb-1">Admission Date</span><span className="font-medium">{formatSafeDate(selectedClientSummary.admission_date)}</span></div>
                   
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Education Level</span><span className="font-medium">{selectedClientSummary.education_level || 'N/A'}</span></div>
                   <div><span className="text-muted-foreground block text-xs uppercase mb-1">Base/Partner</span><span className="font-medium">{selectedClientSummary.street_name || 'N/A'}</span></div>

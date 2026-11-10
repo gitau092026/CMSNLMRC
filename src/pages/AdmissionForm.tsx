@@ -71,9 +71,9 @@ const AdmissionForm = () => {
   ].includes(user?.role || "");
 
   const calculateAge = (dob: string) => {
-    if (!dob) return "";
+    if (!dob || dob.startsWith("1970")) return "";
     const birth = new Date(dob);
-    if (isNaN(birth.getTime())) return "";
+    if (isNaN(birth.getTime()) || birth.getFullYear() <= 1970) return "";
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     if (
@@ -170,7 +170,7 @@ const AdmissionForm = () => {
               firstName,
               lastName,
               nickname: data.nickname || "",
-              dateOfBirth: data.date_of_birth || "",
+              dateOfBirth: (data.date_of_birth && !data.date_of_birth.startsWith("1970")) ? data.date_of_birth : "",
               placeOfBirth: notesObj.placeOfBirth || assessmentFields.placeOfBirth || "",
               healthCondition: notesObj.healthCondition || assessmentFields.healthCondition || "",
               religion: notesObj.religion || assessmentFields.religion || "",

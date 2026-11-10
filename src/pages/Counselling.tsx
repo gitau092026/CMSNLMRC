@@ -676,7 +676,7 @@ export default function Counselling() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label>Date of Birth</Label>
-                <Input value={selectedClient.date_of_birth || ""} disabled className="bg-muted" />
+                <Input value={(selectedClient.date_of_birth && !selectedClient.date_of_birth.startsWith("1970")) ? selectedClient.date_of_birth : ""} disabled className="bg-muted" />
               </div>
               <div>
                 <Label>Client's NLMRC Admission Number</Label>

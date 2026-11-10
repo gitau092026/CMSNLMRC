@@ -285,7 +285,7 @@ const CasePlanDetails = () => {
  </div>
  <div>
  <h3 className="text-sm font-medium text-muted-foreground">Plan Date</h3>
- <p className="text-lg font-semibold">{new Date(plan.plan_date).toLocaleDateString()}</p>
+ <p className="text-lg font-semibold">{plan.plan_date && !plan.plan_date.startsWith("1970") ? new Date(plan.plan_date).toLocaleDateString() : 'N/A'}</p>
  </div>
  </div>
  </CardContent>

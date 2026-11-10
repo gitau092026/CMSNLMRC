@@ -172,6 +172,40 @@ export async function syncAllClientIntakesToSupabase(supabaseClient: any): Promi
 }
 
 /**
+ * Safely formats a Date of Birth string.
+ * Returns 'N/A' if the date is null, empty, invalid, or Unix epoch 1970.
+ */
+export function formatDOB(dateStr: string | null | undefined): string {
+  if (!dateStr || typeof dateStr !== 'string' || !dateStr.trim()) return 'N/A';
+  const trimmed = dateStr.trim();
+  if (trimmed.startsWith('1970')) return 'N/A';
+  try {
+    const d = new Date(trimmed);
+    if (isNaN(d.getTime()) || d.getFullYear() <= 1970) return 'N/A';
+    return d.toLocaleDateString();
+  } catch {
+    return 'N/A';
+  }
+}
+
+/**
+ * Safely formats any general date string.
+ * Returns fallback (default 'N/A') if null, empty, invalid, or Unix epoch 1970.
+ */
+export function formatSafeDate(dateStr: string | null | undefined, fallback = 'N/A'): string {
+  if (!dateStr || typeof dateStr !== 'string' || !dateStr.trim()) return fallback;
+  const trimmed = dateStr.trim();
+  if (trimmed.startsWith('1970')) return fallback;
+  try {
+    const d = new Date(trimmed);
+    if (isNaN(d.getTime()) || d.getFullYear() <= 1970) return fallback;
+    return d.toLocaleDateString();
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * Groups clients into structured intake groups with stats.
  */
 export function groupClientsByIntake<T = any>(clients: T[]): IntakeGroup<T>[] {

@@ -195,15 +195,16 @@ const ReintegrationPlans = () => {
  };
 
  const calculateAge = (dob: string) => {
- if (!dob) return null;
+ if (!dob || dob.startsWith("1970")) return null;
  const birthDate = new Date(dob);
+ if (isNaN(birthDate.getTime()) || birthDate.getFullYear() <= 1970) return null;
  const today = new Date();
  let age = today.getFullYear() - birthDate.getFullYear();
  const monthDiff = today.getMonth() - birthDate.getMonth();
  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
  age--;
  }
- return age;
+ return age >= 0 ? age : null;
  };
 
  const age = calculateAge(client.date_of_birth);

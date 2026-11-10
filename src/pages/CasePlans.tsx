@@ -389,7 +389,7 @@ const CasePlans = () => {
  </div>
  <div className="flex items-center gap-1">
  <ClipboardList className="h-3 w-3" />
- <span>Plan Date: {new Date(plan.plan_date).toLocaleDateString()}</span>
+ <span>Plan Date: {plan.plan_date && !plan.plan_date.startsWith("1970") ? new Date(plan.plan_date).toLocaleDateString() : 'N/A'}</span>
  </div>
  </div>
  </div>
