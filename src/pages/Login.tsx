@@ -27,13 +27,17 @@ export default function Login() {
     }
 
     setLoading(true);
-    const result = await login(email, password);
-    setLoading(false);
-    
-    if (result.success) {
-      navigate("/");
-    } else {
-      setError(result.error || "Invalid email or password");
+    try {
+      const result = await login(email, password);
+      if (result.success) {
+        navigate("/");
+      } else {
+        setError(result.error || "Invalid email or password");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Sign in failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 

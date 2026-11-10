@@ -1067,6 +1067,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_current_user_profile: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          username: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+      }
+      get_auth_user_data: {
+        Args: { _user_id: string }
+        Returns: {
+          id: string
+          email: string
+          created_at: string
+        }
+      }
+      get_dashboard_raw_data: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       app_role:

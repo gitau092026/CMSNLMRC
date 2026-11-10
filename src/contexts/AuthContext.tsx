@@ -121,14 +121,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userObj = typeof userObjOrId === 'object' ? userObjOrId : null;
 
-        // 1. Fast path: try the single unified RPC function (1 roundtrip instead of 2)
+        // 1. Fast path: try the single unified RPC function (with 2s timeout)
         try {
-          const { data: rpcData, error: rpcError } = await supabase.rpc("get_current_user_profile");
-          if (!rpcError && rpcData && rpcData.role) {
+          const rpcPromise = supabase.rpc("get_current_user_profile");
+          const timeoutPromise = new Promise<{ data: any; error: any }>((res) =>
+            setTimeout(() => res({ data: null, error: new Error("RPC timeout") }), 2000)
+          );
+          const { data: rpcData, error: rpcError } = await Promise.race([rpcPromise, timeoutPromise]);
+          if (!rpcError && rpcData && (rpcData as any).role) {
             const authUser: AuthUser = {
-              id: rpcData.id || userId,
-              username: rpcData.username || userObj?.user_metadata?.username || userObj?.email || "User",
-              role: rpcData.role as UserRole,
+              id: (rpcData as any).id || userId,
+              username: (rpcData as any).username || userObj?.user_metadata?.username || userObj?.email || "User",
+              role: (rpcData as any).role as UserRole,
             };
             localStorage.setItem(CACHED_USER_KEY, JSON.stringify(authUser));
             return authUser;
@@ -137,23 +141,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Fallback to table queries below
         }
 
-        // 2. Parallel fallback queries
-        const [role, username] = await Promise.all([
-          fetchUserRole(userId),
-          fetchUserProfile(userId),
-        ]);
+        // 2. Parallel fallback queries (with 2.5s timeout)
+        try {
+          const queriesPromise = Promise.all([
+            fetchUserRole(userId),
+            fetchUserProfile(userId),
+          ]);
+          const queriesTimeout = new Promise<[UserRole | null, string | null]>((res) =>
+            setTimeout(() => res([null, null]), 2500)
+          );
+          const [role, username] = await Promise.race([queriesPromise, queriesTimeout]);
 
-        const resolvedRole = role || userObj?.user_metadata?.role || "social_work";
-        const resolvedUsername = username || userObj?.user_metadata?.username || userObj?.email || "User";
+          const resolvedRole = role || userObj?.user_metadata?.role || "social_work";
+          const resolvedUsername = username || userObj?.user_metadata?.username || userObj?.email || "User";
 
-        const authUser: AuthUser = {
-          id: userId,
-          username: resolvedUsername,
-          role: resolvedRole as UserRole,
-        };
+          const authUser: AuthUser = {
+            id: userId,
+            username: resolvedUsername,
+            role: resolvedRole as UserRole,
+          };
 
-        localStorage.setItem(CACHED_USER_KEY, JSON.stringify(authUser));
-        return authUser;
+          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(authUser));
+          return authUser;
+        } catch {
+          // fallback below
+        }
+
+        // 3. Fallback to user metadata
+        if (userObj) {
+          const fallbackUser: AuthUser = {
+            id: userId,
+            username: userObj.user_metadata?.username || userObj.email || "User",
+            role: (userObj.user_metadata?.role as UserRole) || "social_work",
+          };
+          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(fallbackUser));
+          return fallbackUser;
+        }
+
+        return null;
       } catch (err) {
         console.warn("Failed to build user profile:", err);
         if (userObjOrId && typeof userObjOrId === 'object' && userObjOrId.id) {
@@ -188,6 +213,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearAllTimers();
     setShowSessionWarning(false);
     localStorage.removeItem(CACHED_USER_KEY);
+    try {
+      sessionStorage.removeItem("cms_dashboard_raw_cache");
+    } catch {
+      // ignore
+    }
     try {
       await supabase.auth.signOut();
     } catch {
@@ -253,29 +283,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 1200);
 
     // Subscribe to auth state changes (handles INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (!isMounted) return;
 
       setSession(newSession);
 
-      try {
-        if (newSession?.user) {
-          const built = await buildUser(newSession.user);
-          if (isMounted) {
-            setUser(built);
-            if (built) resetIdleTimer();
+      if (newSession?.user) {
+        // Run buildUser decoupled via setTimeout to avoid synchronous lock contention
+        setTimeout(async () => {
+          if (!isMounted) return;
+          try {
+            const built = await buildUser(newSession.user);
+            if (isMounted) {
+              if (built) {
+                setUser(built);
+                resetIdleTimer();
+              }
+            }
+          } catch (err) {
+            console.error("Auth state change build error:", err);
+          } finally {
+            clearTimeout(safetyTimer);
+            if (isMounted) setLoading(false);
           }
-        } else {
-          setUser(null);
-          localStorage.removeItem(CACHED_USER_KEY);
-          clearAllTimers();
-          setShowSessionWarning(false);
-        }
-      } catch (err) {
-        console.error("Auth state change error:", err);
-      } finally {
+        }, 0);
+      } else {
+        setUser(null);
+        localStorage.removeItem(CACHED_USER_KEY);
+        clearAllTimers();
+        setShowSessionWarning(false);
         clearTimeout(safetyTimer);
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     });
 
@@ -295,20 +333,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const authPromise = supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) =>
+        setTimeout(() => reject(new Error("Sign in timed out. Please check your connection.")), 10000)
+      );
+
+      const { data, error } = await Promise.race([authPromise, timeoutPromise]);
       if (error) return { success: false, error: error.message };
 
-      if (data.user) {
-        const built = await buildUser(data.user);
-        if (!built) return { success: false, error: "User role not found" };
+      if (data?.user) {
+        let built = await buildUser(data.user);
+        if (!built) {
+          built = {
+            id: data.user.id,
+            username: data.user.user_metadata?.username || data.user.email?.split("@")[0] || "User",
+            role: (data.user.user_metadata?.role as UserRole) || "social_work",
+          };
+          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(built));
+        }
         setUser(built);
         resetIdleTimer();
         return { success: true };
       }
 
       return { success: false, error: "Login failed" };
-    } catch {
-      return { success: false, error: "An unexpected error occurred" };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "An unexpected error occurred" };
     }
   };
 

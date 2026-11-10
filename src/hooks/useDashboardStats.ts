@@ -49,15 +49,41 @@ const COLORS = [
   "#14b8a6", "#64748b", "#0ea5e9", "#d946ef", "#f43f5e",
 ];
 
+interface RawClientRow {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+  admission_date: string | null;
+  age: number | null;
+  gender: string | null;
+  education_status: string | null;
+  admission_type: string | null;
+}
+interface RawVisitRow { id: string; visit_date: string; nature_of_reintegration: string | null }
+interface RawSoapRow { id: string; session_date: string }
+interface RawMedicalRow { id: string; visit_date: string }
+interface RawExitRow { id: string; exit_date: string; nature_of_discharge: string | null }
+interface RawAftercareRow {
+  id: string;
+  client_id: string;
+  completion_status: string;
+  placement_type: string | null;
+  placement_course: string | null;
+  institution_workshop: string;
+}
+interface RawStreetVisitRow { id: string; visit_date: string }
+interface RawCasePlanRow { id: string }
+
 interface RawDashboardData {
-  allClients: any[];
-  allVisits: any[];
-  allSoapNotes: any[];
-  allMedical: any[];
-  allExits: any[];
-  allAftercare: any[];
-  allCasePlans: any[];
-  allStreetVisits: any[];
+  allClients: RawClientRow[];
+  allVisits: RawVisitRow[];
+  allSoapNotes: RawSoapRow[];
+  allMedical: RawMedicalRow[];
+  allExits: RawExitRow[];
+  allAftercare: RawAftercareRow[];
+  allCasePlans: RawCasePlanRow[];
+  allStreetVisits: RawStreetVisitRow[];
   timestamp: number;
 }
 
@@ -93,16 +119,14 @@ export const invalidateDashboardCache = () => {
 };
 
 function computeStatsFromRaw(raw: RawDashboardData, dateRange: DateRangeFilter): DashboardStats {
-  const {
-    allClients,
-    allVisits,
-    allSoapNotes,
-    allMedical,
-    allExits,
-    allAftercare,
-    allCasePlans,
-    allStreetVisits
-  } = raw;
+  const allClients = raw.allClients || [];
+  const allVisits = raw.allVisits || [];
+  const allSoapNotes = raw.allSoapNotes || [];
+  const allMedical = raw.allMedical || [];
+  const allExits = raw.allExits || [];
+  const allAftercare = raw.allAftercare || [];
+  const allCasePlans = raw.allCasePlans || [];
+  const allStreetVisits = raw.allStreetVisits || [];
 
   // ── Date range filter ──
   const now = new Date();
@@ -375,7 +399,11 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
   const initialCache = rawCache || loadStoredCache();
   const [stats, setStats] = useState<DashboardStats | null>(() => {
     if (initialCache) {
-      return computeStatsFromRaw(initialCache, dateRange);
+      try {
+        return computeStatsFromRaw(initialCache, dateRange);
+      } catch {
+        return null;
+      }
     }
     return null;
   });
@@ -386,13 +414,24 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
   useEffect(() => {
     let isMounted = true;
 
+    // Guaranteed safety timeout: Never leave dashboard stuck on skeletons
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }, 3500);
+
     const fetchStats = async () => {
       const currentCache = rawCache || loadStoredCache();
 
       // If cache is fresh, display immediately
       if (currentCache && Date.now() - currentCache.timestamp < CACHE_TTL_MS) {
         if (isMounted) {
-          setStats(computeStatsFromRaw(currentCache, dateRange));
+          try {
+            setStats(computeStatsFromRaw(currentCache, dateRange));
+          } catch (e) {
+            console.warn("Error computing stats from cache:", e);
+          }
           setLoading(false);
         }
         return;
@@ -404,20 +443,24 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
 
         let rawData: RawDashboardData | null = null;
 
-        // 1. Fast Path: Single 40ms unified RPC call aggregating all 8 tables in 1 roundtrip
+        // 1. Fast Path: Single unified RPC call with 2.5s strict timeout
         try {
-          const { data: rpcData, error: rpcError } = await supabase.rpc("get_dashboard_raw_data" as any);
+          const rpcPromise = supabase.rpc("get_dashboard_raw_data");
+          const timeoutPromise = new Promise<{ data: any; error: any }>((res) =>
+            setTimeout(() => res({ data: null, error: new Error("RPC timeout") }), 2500)
+          );
+          const { data: rpcData, error: rpcError } = await Promise.race([rpcPromise, timeoutPromise]);
           if (!rpcError && rpcData && typeof rpcData === "object") {
-            const parsed = rpcData as any;
+            const parsed = rpcData as Record<string, unknown>;
             rawData = {
-              allClients: parsed.allClients ?? [],
-              allVisits: parsed.allVisits ?? [],
-              allSoapNotes: parsed.allSoapNotes ?? [],
-              allMedical: parsed.allMedical ?? [],
-              allExits: parsed.allExits ?? [],
-              allAftercare: parsed.allAftercare ?? [],
-              allCasePlans: parsed.allCasePlans ?? [],
-              allStreetVisits: parsed.allStreetVisits ?? [],
+              allClients: (parsed.allClients as RawClientRow[]) ?? [],
+              allVisits: (parsed.allVisits as RawVisitRow[]) ?? [],
+              allSoapNotes: (parsed.allSoapNotes as RawSoapRow[]) ?? [],
+              allMedical: (parsed.allMedical as RawMedicalRow[]) ?? [],
+              allExits: (parsed.allExits as RawExitRow[]) ?? [],
+              allAftercare: (parsed.allAftercare as RawAftercareRow[]) ?? [],
+              allCasePlans: (parsed.allCasePlans as RawCasePlanRow[]) ?? [],
+              allStreetVisits: (parsed.allStreetVisits as RawStreetVisitRow[]) ?? [],
               timestamp: Date.now(),
             };
           }
@@ -425,18 +468,9 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           console.warn("get_dashboard_raw_data RPC error, falling back to parallel queries:", rpcErr);
         }
 
-        // 2. Fallback Path: Parallel queries across tables if RPC is unavailable
+        // 2. Fallback Path: Parallel queries across tables with 3.5s timeout
         if (!rawData) {
-          const [
-            clientsRes,
-            visitsRes,
-            soapNotesRes,
-            medicalRes,
-            exitsRes,
-            aftercareRes,
-            casePlansRes,
-            streetVisitsRes,
-          ] = await Promise.all([
+          const parallelPromise = Promise.all([
             supabase.from("clients").select("id, name, status, created_at, admission_date, age, gender, education_status, admission_type"),
             supabase.from("home_visits").select("id, visit_date, nature_of_reintegration"),
             supabase.from("soap_notes").select("id, session_date"),
@@ -447,31 +481,42 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
             supabase.from("street_visits").select("id, visit_date"),
           ]);
 
-          if (clientsRes.error) throw clientsRes.error;
+          const timeoutPromise = new Promise<null>((res) => setTimeout(() => res(null), 3500));
+          const results = await Promise.race([parallelPromise, timeoutPromise]);
 
-          rawData = {
-            allClients: clientsRes.data ?? [],
-            allVisits: visitsRes.data ?? [],
-            allSoapNotes: soapNotesRes.data ?? [],
-            allMedical: medicalRes.data ?? [],
-            allExits: exitsRes.data ?? [],
-            allAftercare: aftercareRes.data ?? [],
-            allCasePlans: casePlansRes.data ?? [],
-            allStreetVisits: streetVisitsRes.data ?? [],
-            timestamp: Date.now(),
-          };
+          if (results) {
+            const [
+              clientsRes, visitsRes, soapNotesRes, medicalRes,
+              exitsRes, aftercareRes, casePlansRes, streetVisitsRes
+            ] = results;
+
+            rawData = {
+              allClients: (clientsRes?.data as RawClientRow[]) ?? [],
+              allVisits: (visitsRes?.data as RawVisitRow[]) ?? [],
+              allSoapNotes: (soapNotesRes?.data as RawSoapRow[]) ?? [],
+              allMedical: (medicalRes?.data as RawMedicalRow[]) ?? [],
+              allExits: (exitsRes?.data as RawExitRow[]) ?? [],
+              allAftercare: (aftercareRes?.data as RawAftercareRow[]) ?? [],
+              allCasePlans: (casePlansRes?.data as RawCasePlanRow[]) ?? [],
+              allStreetVisits: (streetVisitsRes?.data as RawStreetVisitRow[]) ?? [],
+              timestamp: Date.now(),
+            };
+          }
         }
 
-        rawCache = rawData;
-        saveStoredCache(rawData);
+        if (rawData) {
+          rawCache = rawData;
+          saveStoredCache(rawData);
 
-        if (isMounted) {
-          setStats(computeStatsFromRaw(rawData, dateRange));
+          if (isMounted) {
+            setStats(computeStatsFromRaw(rawData, dateRange));
+          }
         }
       } catch (err: any) {
         console.error("Dashboard stats error:", err);
         if (isMounted) setError(err);
       } finally {
+        clearTimeout(safetyTimer);
         if (isMounted) setLoading(false);
       }
     };
@@ -480,6 +525,7 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
 
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimer);
     };
   }, [dateRange]);
 

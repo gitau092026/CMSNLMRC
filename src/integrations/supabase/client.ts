@@ -13,5 +13,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    // Custom lock implementation to bypass navigator.locks.
+    // In Chromium and single-page apps, navigator.locks causes permanent deadlocks
+    // when auth state changes or concurrent RPC/table queries trigger lock acquisition.
+    lock: async (_name, _acquireTimeout, fn) => {
+      return await fn();
+    },
   }
 });
