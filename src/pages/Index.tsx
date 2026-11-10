@@ -4,7 +4,7 @@ import {
   Users, Home, Calendar, TrendingUp, Medal, Activity,
   Briefcase, Heart, MessageCircle, Shield, Stethoscope, BarChart2, Target,
   MapPin, GraduationCap, BookOpen, UserCheck, AlertTriangle, CheckCircle,
-  Navigation, Lightbulb, ArrowRight,
+  Navigation, Lightbulb, ArrowRight, Layers,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDashboardStats, DateRangeFilter } from "@/hooks/useDashboardStats";
@@ -167,7 +167,8 @@ function ChartCard({
 const Index = () => {
   const navigate  = useNavigate();
   const [dateRange, setDateRange] = useState<DateRangeFilter>("all");
-  const { stats, loading } = useDashboardStats(dateRange);
+  const [intakeFilter, setIntakeFilter] = useState<string>("all");
+  const { stats, loading, availableIntakes } = useDashboardStats(dateRange, intakeFilter);
 
   const reintegrations = (stats?.clientStatusData ?? [])
     .filter(s => ["Alumni - Placed","Alumni - Awaiting Placement","Alumni","Complete","Graduated"].includes(s.name))
@@ -202,20 +203,41 @@ const Index = () => {
               <p className="text-[11px] text-slate-400 hidden sm:block">Monitoring &amp; Evaluation</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-            <Select value={dateRange} onValueChange={(v: DateRangeFilter) => setDateRange(v)}>
-              <SelectTrigger className="h-8 w-[140px] text-xs font-semibold border-slate-200 focus:ring-0 shadow-none">
-                <SelectValue placeholder="Timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Last 7 Days</SelectItem>
-                <SelectItem value="30d">Last 30 Days</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="year">This Year</SelectItem>
-                <SelectItem value="all">All Time</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {/* Intake / Cohort filter */}
+            <div className="flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 text-slate-400" />
+              <Select value={intakeFilter} onValueChange={(v) => setIntakeFilter(v)}>
+                <SelectTrigger className="h-8 min-w-[125px] sm:min-w-[145px] text-xs font-semibold border-slate-200 focus:ring-0 shadow-none bg-white">
+                  <SelectValue placeholder="All Intakes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Intakes</SelectItem>
+                  {availableIntakes.map((intake) => (
+                    <SelectItem key={intake} value={intake}>
+                      {intake}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Timeframe filter */}
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+              <Select value={dateRange} onValueChange={(v: DateRangeFilter) => setDateRange(v)}>
+                <SelectTrigger className="h-8 w-[120px] sm:w-[135px] text-xs font-semibold border-slate-200 focus:ring-0 shadow-none bg-white">
+                  <SelectValue placeholder="Timeframe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7d">Last 7 Days</SelectItem>
+                  <SelectItem value="30d">Last 30 Days</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="year">This Year</SelectItem>
+                  <SelectItem value="all">All Time</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
@@ -227,7 +249,13 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
             <div>
               <h2 className="text-xl font-bold leading-tight">Programme Overview</h2>
-              <p className="text-green-100 text-sm mt-0.5">{RANGE_LABELS[dateRange]}</p>
+              <div className="flex flex-wrap items-center gap-2 mt-1 text-green-100 text-sm">
+                <span>{RANGE_LABELS[dateRange]}</span>
+                <span className="opacity-60">•</span>
+                <span className="font-semibold px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs backdrop-blur-sm">
+                  {intakeFilter === "all" ? "All Intakes" : intakeFilter}
+                </span>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

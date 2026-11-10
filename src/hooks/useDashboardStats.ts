@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, startOfMonth, startOfYear, isAfter, isEqual, parseISO } from "date-fns";
+import { getClientIntake, getUniqueIntakes } from "@/utils/intakeUtils";
 
 export type DateRangeFilter = "all" | "7d" | "30d" | "month" | "year";
 
@@ -59,11 +60,13 @@ interface RawClientRow {
   gender: string | null;
   education_status: string | null;
   admission_type: string | null;
+  notes?: string | null;
+  intake?: string | null;
 }
-interface RawVisitRow { id: string; visit_date: string; nature_of_reintegration: string | null }
-interface RawSoapRow { id: string; session_date: string }
-interface RawMedicalRow { id: string; visit_date: string }
-interface RawExitRow { id: string; exit_date: string; nature_of_discharge: string | null }
+interface RawVisitRow { id: string; client_id?: string; visit_date: string; nature_of_reintegration: string | null }
+interface RawSoapRow { id: string; client_id?: string; session_date: string }
+interface RawMedicalRow { id: string; client_id?: string; visit_date: string }
+interface RawExitRow { id: string; client_id?: string; exit_date: string; nature_of_discharge: string | null }
 interface RawAftercareRow {
   id: string;
   client_id: string;
@@ -73,7 +76,7 @@ interface RawAftercareRow {
   institution_workshop: string;
 }
 interface RawStreetVisitRow { id: string; visit_date: string }
-interface RawCasePlanRow { id: string }
+interface RawCasePlanRow { id: string; client_id?: string }
 
 interface RawDashboardData {
   allClients: RawClientRow[];
@@ -118,15 +121,40 @@ export const invalidateDashboardCache = () => {
   }
 };
 
-function computeStatsFromRaw(raw: RawDashboardData, dateRange: DateRangeFilter): DashboardStats {
-  const allClients = raw.allClients || [];
-  const allVisits = raw.allVisits || [];
-  const allSoapNotes = raw.allSoapNotes || [];
-  const allMedical = raw.allMedical || [];
-  const allExits = raw.allExits || [];
-  const allAftercare = raw.allAftercare || [];
-  const allCasePlans = raw.allCasePlans || [];
-  const allStreetVisits = raw.allStreetVisits || [];
+function computeStatsFromRaw(
+  raw: RawDashboardData,
+  dateRange: DateRangeFilter,
+  intakeFilter: string = "all"
+): DashboardStats {
+  const rawClients = raw.allClients || [];
+  const rawVisits = raw.allVisits || [];
+  const rawSoapNotes = raw.allSoapNotes || [];
+  const rawMedical = raw.allMedical || [];
+  const rawExits = raw.allExits || [];
+  const rawAftercare = raw.allAftercare || [];
+  const rawCasePlans = raw.allCasePlans || [];
+  const rawStreetVisits = raw.allStreetVisits || [];
+
+  // ── Intake / Cohort filter ──
+  let allClients = rawClients;
+  let allVisits = rawVisits;
+  let allSoapNotes = rawSoapNotes;
+  let allMedical = rawMedical;
+  let allExits = rawExits;
+  let allAftercare = rawAftercare;
+  let allCasePlans = rawCasePlans;
+  const allStreetVisits = rawStreetVisits;
+
+  if (intakeFilter && intakeFilter !== "all") {
+    allClients = rawClients.filter(c => getClientIntake(c) === intakeFilter);
+    const clientIds = new Set(allClients.map(c => c.id));
+    allVisits = rawVisits.filter(v => !v.client_id || clientIds.has(v.client_id));
+    allSoapNotes = rawSoapNotes.filter(s => !s.client_id || clientIds.has(s.client_id));
+    allMedical = rawMedical.filter(m => !m.client_id || clientIds.has(m.client_id));
+    allExits = rawExits.filter(e => !e.client_id || clientIds.has(e.client_id));
+    allAftercare = rawAftercare.filter(a => clientIds.has(a.client_id));
+    allCasePlans = rawCasePlans.filter(cp => !cp.client_id || clientIds.has(cp.client_id));
+  }
 
   // ── Date range filter ──
   const now = new Date();
@@ -395,12 +423,15 @@ function computeStatsFromRaw(raw: RawDashboardData, dateRange: DateRangeFilter):
   };
 }
 
-export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
+export const useDashboardStats = (
+  dateRange: DateRangeFilter = "all",
+  intakeFilter: string = "all"
+) => {
   const initialCache = rawCache || loadStoredCache();
   const [stats, setStats] = useState<DashboardStats | null>(() => {
     if (initialCache) {
       try {
-        return computeStatsFromRaw(initialCache, dateRange);
+        return computeStatsFromRaw(initialCache, dateRange, intakeFilter);
       } catch {
         return null;
       }
@@ -410,6 +441,12 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
   // Instant 0ms display if cache exists in memory or sessionStorage
   const [loading, setLoading] = useState<boolean>(!initialCache);
   const [error, setError] = useState<Error | null>(null);
+
+  const availableIntakes = useMemo(() => {
+    const currentCache = rawCache || loadStoredCache();
+    if (!currentCache || !currentCache.allClients) return ["36th Intake", "35th Intake"];
+    return getUniqueIntakes(currentCache.allClients);
+  }, [stats]);
 
   useEffect(() => {
     let isMounted = true;
@@ -428,7 +465,7 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
       if (currentCache && Date.now() - currentCache.timestamp < CACHE_TTL_MS) {
         if (isMounted) {
           try {
-            setStats(computeStatsFromRaw(currentCache, dateRange));
+            setStats(computeStatsFromRaw(currentCache, dateRange, intakeFilter));
           } catch (e) {
             console.warn("Error computing stats from cache:", e);
           }
@@ -471,13 +508,13 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
         // 2. Fallback Path: Parallel queries across tables with 3.5s timeout
         if (!rawData) {
           const parallelPromise = Promise.all([
-            supabase.from("clients").select("id, name, status, created_at, admission_date, age, gender, education_status, admission_type"),
-            supabase.from("home_visits").select("id, visit_date, nature_of_reintegration"),
-            supabase.from("soap_notes").select("id, session_date"),
-            supabase.from("medical_records").select("id, visit_date"),
-            supabase.from("exit_records").select("id, exit_date, nature_of_discharge"),
+            supabase.from("clients").select("id, name, status, created_at, admission_date, age, gender, education_status, admission_type, notes"),
+            supabase.from("home_visits").select("id, client_id, visit_date, nature_of_reintegration"),
+            supabase.from("soap_notes").select("id, client_id, session_date"),
+            supabase.from("medical_records").select("id, client_id, visit_date"),
+            supabase.from("exit_records").select("id, client_id, exit_date, nature_of_discharge"),
             supabase.from("aftercare_records").select("id, client_id, completion_status, placement_type, placement_course, institution_workshop"),
-            supabase.from("case_plans").select("id"),
+            supabase.from("case_plans").select("id, client_id"),
             supabase.from("street_visits").select("id, visit_date"),
           ]);
 
@@ -509,7 +546,7 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
           saveStoredCache(rawData);
 
           if (isMounted) {
-            setStats(computeStatsFromRaw(rawData, dateRange));
+            setStats(computeStatsFromRaw(rawData, dateRange, intakeFilter));
           }
         }
       } catch (err: any) {
@@ -527,7 +564,7 @@ export const useDashboardStats = (dateRange: DateRangeFilter = "all") => {
       isMounted = false;
       clearTimeout(safetyTimer);
     };
-  }, [dateRange]);
+  }, [dateRange, intakeFilter]);
 
-  return { stats, loading, error };
+  return { stats, loading, error, availableIntakes };
 };
